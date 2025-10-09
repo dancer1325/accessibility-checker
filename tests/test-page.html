@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            border-left: 4px solid #2196f3;
+        }
+
+        /* Intentional accessibility issues for testing */
+
+        .small-text {
+            font-size: 11px;
+            /* Too small - should fail */
+            margin: 20px 0;
+        }
+
+        .good-text {
+            font-size: 16px;
+            /* Good size - should pass */
+            margin: 20px 0;
+        }
+
+        .small-button {
+            width: 20px;
+            /* Too small - should fail */
+            height: 20px;
+            background: #4285f4;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px;
+        }
+
+        .good-button {
+            padding: 12px 24px;
+            /* Good size - should pass */
+            background: #4285f4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px;
+        }
+
+        .poor-contrast {
+            color: #aaa;
+            /* Poor contrast on white - should fail */
+            background: white;
+            padding: 10px;
+            margin: 20px 0;
+        }
+
+        .good-contrast {
+            color: #333;
+            /* Good contrast - should pass */
+            background: white;
+            padding: 10px;
+            margin: 20px 0;
+        }
+
+        .no-label {
+            /* Button without aria-label - should fail */
+            padding: 10px;
+            background: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .with-label {
+            padding: 10px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .icon-button {
+            width: 20px;
+            height: 20px;
+            background: #ff9800;
+            border: none;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+
+        section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 4px;
+        }
+
+        section h2 {
+            margin-bottom: 15px;
+            color: #1976d2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>Accessibility Test Page</h1>
+
+        <div class="info">
+            <strong>How to test:</strong>
+            <ol>
+                <li>Click the Accessibility Checker extension icon</li>
+                <li>Enter "test-container" as the div class</li>
+                <li>Make sure all audit options are enabled</li>
+                <li>Click "Run Analysis"</li>
+                <li>You should see several accessibility issues highlighted below</li>
+            </ol>
+        </div>
+
+        <section>
+            <h2>1. Text Size Test</h2>
+            <p class="small-text">❌ This text is too small (11px) - should be flagged as an error</p>
+            <p class="good-text">✅ This text is good size (16px) - should pass</p>
+        </section>
+
+        <section>
+            <h2>2. Clickable Icon Size Test</h2>
+            <div>
+                <button class="small-button" title="Small button">❌</button>
+                <span style="vertical-align: middle;">This button is too small (20x20px) - should fail</span>
+            </div>
+            <div>
+                <button class="good-button">✅ Good Button</button>
+                <span style="vertical-align: middle;">This button is good size - should pass</span>
+            </div>
+            <div>
+                <button class="icon-button">🔍</button>
+                <span style="vertical-align: middle;">Icon button too small - should fail</span>
+            </div>
+        </section>
+
+        <section>
+            <h2>3. Color Contrast Test</h2>
+            <div class="poor-contrast">
+                ❌ This text has poor contrast (light gray on white) - should be flagged
+            </div>
+            <div class="good-contrast">
+                ✅ This text has good contrast (dark gray on white) - should pass
+            </div>
+        </section>
+
+        <section>
+            <h2>4. ARIA Label Test</h2>
+            <div>
+                <button class="no-label">❌</button>
+                <span style="vertical-align: middle;">Button without aria-label - should fail</span>
+            </div>
+            <div>
+                <button class="with-label" aria-label="Close dialog">✅</button>
+                <span style="vertical-align: middle;">Button with aria-label - should pass</span>
+            </div>
+            <div style="margin-top: 15px;">
+                <input type="text" placeholder="Input without label">
+                <span style="vertical-align: middle;">❌ Input without label - should fail</span>
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="goodInput">Email:</label>
+                <input type="text" id="goodInput">
+                <span style="vertical-align: middle;">✅ Input with label - should pass</span>
+            </div>
+        </section>
+
+        <section>
+            <h2>Expected Results</h2>
+            <p>When you run the analysis on the "test-container" class, you should see:</p>
+            <ul>
+                <li>Small text highlighted (11px text)</li>
+                <li>Small buttons highlighted (20x20px buttons and icon buttons)</li>
+                <li>Poor contrast text highlighted (light gray text)</li>
+                <li>Buttons and inputs without proper labels highlighted</li>
+            </ul>
+            <p><strong>Total expected issues: ~7-10 errors</strong></p>
+        </section>
+    </div>
+
+    <!-- This content is outside the test-container and should NOT be audited -->
+    <div class="outside-container"
+        style="margin-top: 50px; padding: 20px; background: #fff3cd; border-radius: 8px; max-width: 800px; margin-left: auto; margin-right: auto;">
+        <h2>Outside Test Container</h2>
+        <p style="font-size: 10px;">This text is also small but should NOT be flagged because it's outside the
+            test-container div</p>
+        <button style="width: 15px; height: 15px;">Tiny</button>
+        <p>Use this to verify that the extension only audits elements within the specified div class.</p>
+    </div>
+</body>
+
+</html>

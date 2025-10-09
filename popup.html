@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility Checker</title>
+    <link rel="stylesheet" href="styles/popup.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Accessibility Checker</h1>
+
+        <div class="form-group">
+            <label for="divClass">Target Div Class:</label>
+            <input type="text" id="divClass" placeholder="e.g., container or app-int" class="input-field" />
+            <small class="hint-text">Enter class name (without dot) or tag name</small>
+        </div>
+
+        <div class="options-section">
+            <h2>Basic Checks</h2>
+
+            <div class="option-item">
+                <label class="switch-label">
+                    <input type="checkbox" id="checkFontSize" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="option-text">Text Size (min 14px)</span>
+            </div>
+
+            <div class="option-item">
+                <label class="switch-label">
+                    <input type="checkbox" id="checkIconSize" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="option-text">Clickable Icons (min 24px)</span>
+            </div>
+
+            <div class="option-item">
+                <label class="switch-label">
+                    <input type="checkbox" id="checkContrast" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="option-text">Color Contrast</span>
+            </div>
+
+            <div class="option-item">
+                <label class="switch-label">
+                    <input type="checkbox" id="checkBorderContrast" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="option-text">Border Contrast</span>
+            </div>
+
+            <div class="option-item">
+                <label class="switch-label">
+                    <input type="checkbox" id="checkAriaLabel" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="option-text">ARIA Labels</span>
+            </div>
+
+            <div class="option-item">
+                <label class="switch-label">
+                    <input type="checkbox" id="checkEmptyElements">
+                    <span class="slider"></span>
+                </label>
+                <span class="option-text">Empty Clickable Elements (0x0px)</span>
+            </div>
+
+            <!-- Advanced Checks Expandable -->
+            <div class="advanced-section">
+                <button id="toggleAdvanced" class="btn-toggle-advanced">
+                    <span class="toggle-icon">▶</span>
+                    <span class="toggle-text">Advanced Checks (10)</span>
+                </button>
+
+                <div id="advancedOptions" class="advanced-options" style="display: none;">
+                    <h3>🔴 High Priority</h3>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkFocusVisible">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Focus Visible (keyboard navigation)</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkTabOrder">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Tab Order (tabindex issues)</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkAltText">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Alt Text (images & icons)</span>
+                    </div>
+
+                    <h3>🟡 Medium Priority</h3>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkFormLabels">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Form Labels (input associations)</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkHeadings">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Headings Structure (h1-h6 hierarchy)</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkKeyboardTraps">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Keyboard Traps (focus management)</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkHiddenContent">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Hidden Content (aria-hidden issues)</span>
+                    </div>
+
+                    <h3>🟢 Low Priority</h3>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkColorDependence">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Color Dependence (visual-only info)</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkLanguage">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Language Attributes (lang)</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkLinkText">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Link Text (descriptive links)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button id="runAnalysis" class="btn-primary">Run Analysis</button>
+
+        <!-- Flow Controls -->
+        <div class="flow-controls">
+            <button id="startFlow" class="btn-flow">🎬 Iniciar Flujo</button>
+            <button id="addPageToFlow" class="btn-flow-add" style="display: none;">➕ Analizar Página</button>
+            <button id="finishFlow" class="btn-flow-finish" style="display: none;">✅ Finalizar Flujo</button>
+        </div>
+
+        <div id="flowStatus" class="flow-status-message" style="display: none;"></div>
+
+        <div id="status" class="status-message"></div>
+
+        <!-- Report Section -->
+        <div class="report-section">
+            <h2>Audit Report</h2>
+
+            <div class="report-summary" id="reportSummary">
+                <p class="summary-text">No errors collected yet. Run analysis to start.</p>
+            </div>
+
+            <div class="report-actions">
+                <button id="viewReport" class="btn-secondary">View Details</button>
+                <button id="downloadReport" class="btn-success">Download Excel</button>
+                <button id="clearReport" class="btn-danger">Clear Report</button>
+            </div>
+
+            <!-- Report Table (hidden by default) -->
+            <div id="reportTable" class="report-table-container" style="display: none;">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Flow</th>
+                            <th>Page</th>
+                            <th>Errors</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            by @soyJairoCosta
+        </div>
+    </div>
+
+    <script src="src/popup.js"></script>
+</body>
+
+</html>

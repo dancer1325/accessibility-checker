@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page - Report System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        .test-container {
+            border: 2px solid #ccc;
+            padding: 30px;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .small-text {
+            font-size: 10px;
+        }
+
+        .small-button {
+            width: 20px;
+            height: 20px;
+            padding: 0;
+        }
+
+        .low-contrast {
+            color: #ccc;
+            background: #ddd;
+            padding: 10px;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Test Page - Report System</h1>
+
+    <div class="instructions">
+        <h3>📋 Instrucciones de Testing</h3>
+        <ol>
+            <li>Abre esta página con: <code>test-page-report.html?applicationId=TEST_FLOW#/page1</code></li>
+            <li>Abre el popup de la extensión</li>
+            <li>Ingresa: <code>test-container</code></li>
+            <li>Habilita todos los checks</li>
+            <li>Click "Run Analysis"</li>
+            <li>Verifica que encuentra ~10 errores</li>
+            <li>Cambia la URL a: <code>#/page2</code></li>
+            <li>Ejecuta análisis nuevamente</li>
+            <li>Click "View Details" en el popup</li>
+            <li>Verifica que hay 2 páginas (page1 y page2)</li>
+            <li>Click "Download Excel"</li>
+            <li>Abre el CSV en Excel y verifica el formato</li>
+        </ol>
+    </div>
+
+    <div class="info-box">
+        <strong>💡 URL actual:</strong>
+        <p id="current-url"></p>
+        <strong>Flow detectado:</strong> <span id="flow-name"></span><br>
+        <strong>Página detectada:</strong> <span id="page-name"></span>
+    </div>
+
+    <!-- Contenedor principal para auditar -->
+    <div class="test-container">
+        <h2>Área de Testing (test-container)</h2>
+
+        <!-- Test 1: Text Size -->
+        <div class="test-section">
+            <h3>Test 1: Font Size</h3>
+            <p class="small-text" id="small-text-1" trackid="text-small" data-testid="small-paragraph">
+                Este texto es demasiado pequeño (10px).
+            </p>
+            <span class="small-text" id="small-text-2" trackid="text-tiny">
+                Otro texto pequeño sin data-testid.
+            </span>
+        </div>
+
+        <!-- Test 2: Icon Size -->
+        <div class="test-section">
+            <h3>Test 2: Clickable Icons</h3>
+            <button class="small-button" id="small-btn-1" trackid="btn-search" data-testid="search-button">
+                🔍
+            </button>
+            <button class="small-button" trackid="btn-close">
+                ✖️
+            </button>
+        </div>
+
+        <!-- Test 3: Contrast -->
+        <div class="test-section">
+            <h3>Test 3: Color Contrast</h3>
+            <div class="low-contrast" id="low-contrast-1" trackid="warning-box" data-testid="warning-message">
+                Este texto tiene bajo contraste (gris claro sobre gris).
+            </div>
+            <button class="low-contrast" id="low-contrast-btn" trackid="btn-disabled">
+                Botón con bajo contraste
+            </button>
+        </div>
+
+        <!-- Test 4: ARIA Labels -->
+        <div class="test-section">
+            <h3>Test 4: ARIA Labels</h3>
+            <button id="no-aria-1" trackid="btn-submit" data-testid="submit-action">
+                <!-- Botón sin texto ni aria-label -->
+            </button>
+            <a href="#" id="no-aria-2" trackid="link-external">
+                <!-- Link sin texto -->
+            </a>
+        </div>
+
+        <!-- Test 5: Empty Elements -->
+        <div class="test-section">
+            <h3>Test 5: Empty Clickable Elements</h3>
+            <button id="empty-btn-1" trackid="btn-loading" data-testid="loading-spinner">
+                <span style="width: 0; height: 0; display: inline-block;"></span>
+            </button>
+            <div onclick="alert('click')" id="empty-div" trackid="clickable-div"
+                style="cursor: pointer; width: 0; height: 0;">
+            </div>
+        </div>
+
+        <!-- Test 6: Elementos Combinados (múltiples errores) -->
+        <div class="test-section">
+            <h3>Test 6: Elemento con Múltiples Errores</h3>
+            <button id="multi-error-btn" trackid="btn-multi-error" data-testid="problematic-button"
+                class="small-button low-contrast" style="font-size: 10px; width: 15px; height: 15px;">
+                <!-- Tiene: tamaño pequeño, bajo contraste, sin ARIA, texto pequeño -->
+                X
+            </button>
+        </div>
+    </div>
+
+    <div class="info-box" style="margin-top: 30px;">
+        <h3>✅ Errores Esperados</h3>
+        <ul>
+            <li><strong>FONT-SIZE:</strong> ~3 elementos</li>
+            <li><strong>ICON-SIZE:</strong> ~3 elementos</li>
+            <li><strong>CONTRAST:</strong> ~3 elementos</li>
+            <li><strong>ARIA-LABEL:</strong> ~3 elementos</li>
+            <li><strong>EMPTY-ELEMENT:</strong> ~2 elementos</li>
+        </ul>
+        <p><strong>Total aproximado:</strong> 14-16 errores (algunos elementos tienen múltiples errores)</p>
+    </div>
+
+    <div class="instructions">
+        <h3>🧪 Tests Adicionales</h3>
+
+        <h4>Test A: Múltiples Páginas</h4>
+        <ol>
+            <li>Ejecuta análisis en <code>#/page1</code> → Guarda N errores</li>
+            <li>Cambia URL a <code>#/page2</code></li>
+            <li>Ejecuta análisis nuevamente</li>
+            <li>Verifica que el resumen muestra 2 páginas</li>
+            <li>Verifica que los errores se acumulan (no se reemplazan)</li>
+        </ol>
+
+        <h4>Test B: Re-análisis de Misma Página</h4>
+        <ol>
+            <li>Ejecuta análisis en <code>#/page1</code> → Nota el número de errores</li>
+            <li>Ejecuta análisis nuevamente (sin cambiar nada)</li>
+            <li>Verifica que el número de errores es el mismo (no se duplica)</li>
+        </ol>
+
+        <h4>Test C: Múltiples Flujos</h4>
+        <ol>
+            <li>Ejecuta análisis con <code>?applicationId=FLOW_A#/page1</code></li>
+            <li>Cambia a <code>?applicationId=FLOW_B#/page1</code></li>
+            <li>Ejecuta análisis</li>
+            <li>Verifica que el resumen muestra 2 flujos</li>
+            <li>Descarga Excel y verifica que hay 2 secciones</li>
+        </ol>
+
+        <h4>Test D: Atributos en CSV</h4>
+        <ol>
+            <li>Ejecuta análisis completo</li>
+            <li>Descarga Excel</li>
+            <li>Verifica que cada fila tiene:
+                <ul>
+                    <li>FLOW NAME: TEST_FLOW</li>
+                    <li>PAGE NAME: page1</li>
+                    <li>ERROR CODE: FONT-SIZE, ICON-SIZE, etc.</li>
+                    <li>ELEMENT TYPE: button, span, div, etc.</li>
+                    <li>ID: los IDs de los elementos</li>
+                    <li>TRACK ID: los trackid de los elementos</li>
+                    <li>DATA-TEST-ID: los data-testid de los elementos</li>
+                    <li>ERROR MESSAGE: mensaje descriptivo</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h4>Test E: Clear Report</h4>
+        <ol>
+            <li>Acumula errores en varias páginas</li>
+            <li>Click "Clear Report"</li>
+            <li>Confirma el diálogo</li>
+            <li>Verifica que el resumen muestra "No errors collected yet"</li>
+            <li>Ejecuta análisis nuevamente</li>
+            <li>Verifica que empieza desde cero</li>
+        </ol>
+    </div>
+
+    <script>
+        // Mostrar información de la URL actual
+        function updateURLInfo() {
+            const url = window.location.href;
+            document.getElementById('current-url').textContent = url;
+
+            // Simular extracción de flow name
+            const urlParams = new URLSearchParams(window.location.search);
+            const applicationId = urlParams.get('applicationId');
+            const flowName = applicationId || 'NEW QnB';
+            document.getElementById('flow-name').textContent = flowName;
+
+            // Simular extracción de page name
+            let pageName = 'unknown';
+            if (window.location.hash && window.location.hash.includes('#/')) {
+                const hashPart = window.location.hash.split('#/')[1];
+                if (hashPart) {
+                    pageName = hashPart.split('?')[0].split('/')[0];
+                }
+            } else {
+                const pathname = window.location.pathname;
+                const parts = pathname.split('/').filter(p => p);
+                pageName = parts[parts.length - 1] || 'home';
+            }
+            document.getElementById('page-name').textContent = pageName;
+        }
+
+        updateURLInfo();
+
+        // Actualizar cuando cambie el hash
+        window.addEventListener('hashchange', updateURLInfo);
+    </script>
+</body>
+
+</html>
