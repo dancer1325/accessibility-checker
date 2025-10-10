@@ -66,16 +66,13 @@ async function captureElementScreenshot(element, container = null) {
     // Get element dimensions
     const elementRect = element.getBoundingClientRect();
 
-    // Check if element is visible at all
-    const isVisible = elementRect.width > 0 || elementRect.height > 0;
-    const isTooSmall = elementRect.width < 5 && elementRect.height < 5;
+    // Check if element exists in DOM (even if 0x0)
+    // For 0x0 elements (empty containers), we still want to capture with context
+    const is0x0 = elementRect.width === 0 && elementRect.height === 0;
+    const isTooSmall =
+      (elementRect.width < 5 && elementRect.height < 5) || is0x0;
 
-    if (!isVisible) {
-      console.warn('Element not visible:', element.tagName);
-      return null;
-    }
-
-    // For very small elements (like empty <a> or <p>), we'll still capture
+    // For very small or 0x0 elements (like empty icon containers), we'll still capture
     // but expand the capture area to show context
     const captureSmallElement = isTooSmall;
 
@@ -83,6 +80,7 @@ async function captureElementScreenshot(element, container = null) {
       console.log('Capturing small/empty element with expanded context:', {
         element: element.tagName,
         rect: elementRect,
+        is0x0: is0x0,
       });
     } else {
       console.log('Capturing screenshot centered on element:', {
@@ -1075,13 +1073,21 @@ function checkIconSize(elements, errors) {
     // Skip 0x0 elements (they'll be checked in checkEmptyElements if enabled)
     if (width === 0 || height === 0) return;
 
-    // Check if it's likely an icon (has SVG, icon class, or is small)
+    // Check if element has visible text content
+    const hasVisibleText = targetElement.textContent.trim().length > 0;
+
+    // Check if it's likely an icon-only element (has icon but NO text)
     const hasIcon =
       targetElement.querySelector('svg, i, [class*="icon"]') ||
       targetElement.classList.toString().toLowerCase().includes('icon') ||
       targetElement.tagName === 'SVG';
 
-    if (hasIcon || (!targetElement.textContent.trim() && isClickable)) {
+    // Only apply 24x24px rule to icon-only buttons (without text)
+    // Buttons with text are judged by text size, not icon size
+    const isIconOnlyButton = hasIcon && !hasVisibleText;
+    const isEmptyClickable = !hasVisibleText && isClickable;
+
+    if (isIconOnlyButton || isEmptyClickable) {
       if (width < 24 || height < 24) {
         errors.push({
           element: targetElement,
@@ -1277,13 +1283,80 @@ function checkAltText(elements, errors) {
       const ariaHidden = element.getAttribute('aria-hidden');
       const ariaLabel = element.getAttribute('aria-label');
       const hasText = element.textContent.trim().length > 0;
-      const isInButton = element.closest('button, a, [role="button"]');
+      const parentButton = element.closest('button, a, [role="button"]');
 
-      // Icon without text and not hidden, and not inside a labeled button
-      if (!ariaHidden && !ariaLabel && !hasText && !isInButton) {
+      // Check if this element has icon children that would be reported instead
+      const hasIconChildren = Array.from(element.children).some((child) => {
+        return (
+          child.tagName === 'I' ||
+          child.classList.toString().toLowerCase().includes('icon')
+        );
+      });
+
+      // Skip parent containers if they have icon children - report the child instead
+      // This prevents duplicate errors for nested icon elements
+      if (hasIconChildren) {
+        return;
+      }
+
+      // Check element dimensions - empty icon containers might have 0x0 size
+      const rect = element.getBoundingClientRect();
+      const isEmpty = rect.width === 0 || rect.height === 0;
+
+      // Determine if icon should be decorative (aria-hidden)
+      // Icon should be hidden if:
+      // 1. It's truly decorative (icon that just reinforces the text visually)
+      // 2. It's standalone without semantic meaning
+      let shouldBeHidden = false;
+
+      if (parentButton) {
+        // Check if button has text content (excluding the icon itself)
+        const buttonText = parentButton.textContent
+          .replace(element.textContent, '')
+          .trim();
+
+        // Icon is decorative ONLY if:
+        // - Button has text AND
+        // - Icon is truly decorative (not chevrons, arrows, status icons)
+        const iconName = element.className.toLowerCase();
+        const isFunctionalIcon =
+          iconName.includes('chevron') ||
+          iconName.includes('arrow') ||
+          iconName.includes('expand') ||
+          iconName.includes('collapse') ||
+          iconName.includes('dropdown') ||
+          iconName.includes('caret') ||
+          element
+            .getAttribute('name')
+            ?.match(/chevron|arrow|expand|collapse|caret|dropdown/i);
+
+        // Only mark as decorative if button has text AND icon is NOT functional
+        shouldBeHidden = buttonText.length > 0 && !isFunctionalIcon;
+      }
+
+      // Special case: Empty icon container (e.g., icon-start without actual icon)
+      if (isEmpty && !hasText && !hasIconChildren) {
+        // This is likely a placeholder for an icon that was never added
         errors.push({
           element: element,
-          message: `Icon accessibility: Decorative icon without aria-hidden="true"`,
+          message: `Icon accessibility: Empty icon container (no icon, 0x0px) - remove or add icon`,
+        });
+        count++;
+        return;
+      }
+
+      // Icon without proper attributes
+      if (!ariaHidden && !ariaLabel && !hasText) {
+        // Skip if icon is inside a button without text (icon is the button's purpose)
+        if (parentButton && !shouldBeHidden) {
+          return; // Icon-only button - the button itself will be checked for size
+        }
+
+        errors.push({
+          element: element,
+          message: shouldBeHidden
+            ? `Icon accessibility: Decorative icon without aria-hidden="true"`
+            : `Icon accessibility: Icon without aria-label or text content`,
         });
         count++;
       }
