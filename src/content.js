@@ -83,7 +83,7 @@ async function captureElementScreenshot(element, container = null) {
         is0x0: is0x0,
       });
     } else {
-      console.log('Capturing screenshot centered on element:', {
+      console.log('Capturing screenshot of element only (cropped):', {
         element: element.tagName,
         rect: elementRect,
       });
@@ -128,14 +128,15 @@ async function captureElementScreenshot(element, container = null) {
         );
       }
 
-      // Add highlight to screenshot
-      return await addHighlightToScreenshot(
+      // Crop and highlight element only (not full viewport)
+      return await cropAndHighlightElement(
         response.dataUrl,
         elementRectAfterScroll.left,
         elementRectAfterScroll.top,
         elementRectAfterScroll.width,
         elementRectAfterScroll.height,
-        element.tagName
+        element.tagName,
+        captureSmallElement
       );
     } catch (error) {
       console.error('Error during screenshot capture:', error);
@@ -155,70 +156,87 @@ async function captureElementScreenshot(element, container = null) {
 }
 
 /**
- * Add red highlight border to screenshot
+ * Crop screenshot to element area and add red highlight border
+ * This captures only the element + margins, not the full viewport
  */
-async function addHighlightToScreenshot(
+async function cropAndHighlightElement(
   screenshotDataUrl,
   elementX,
   elementY,
   elementWidth,
   elementHeight,
-  tagName
+  tagName,
+  isSmallElement = false
 ) {
   return new Promise((resolve) => {
     const img = new Image();
 
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-
-      // Draw screenshot
-      ctx.drawImage(img, 0, 0);
-
       const dpr = window.devicePixelRatio || 1;
 
-      // Calculate highlight position (account for device pixel ratio)
-      let highlightX = elementX * dpr;
-      let highlightY = elementY * dpr;
-      let highlightWidth = elementWidth * dpr;
-      let highlightHeight = elementHeight * dpr;
+      // Define margins around element (in logical pixels)
+      const margin = isSmallElement ? 40 : 30;
 
-      // For very small elements, ensure minimum visible size
-      const minVisibleSize = 20 * dpr;
-      const isSmallElement =
-        highlightWidth < minVisibleSize || highlightHeight < minVisibleSize;
+      // Ensure minimum visible size for small elements
+      const minSize = 60;
+      let displayWidth = Math.max(elementWidth, isSmallElement ? minSize : 0);
+      let displayHeight = Math.max(elementHeight, isSmallElement ? minSize : 0);
 
-      if (isSmallElement) {
-        console.log('Adjusting highlight for small element');
-        // Expand the highlight box to be more visible
-        const expandAmount = minVisibleSize / 2;
-        highlightX = Math.max(0, highlightX - expandAmount / 2);
-        highlightY = Math.max(0, highlightY - expandAmount / 2);
-        highlightWidth = Math.max(
-          minVisibleSize,
-          highlightWidth + expandAmount
-        );
-        highlightHeight = Math.max(
-          minVisibleSize,
-          highlightHeight + expandAmount
-        );
-      }
+      // Calculate crop area with margins
+      const cropX = Math.max(0, elementX - margin);
+      const cropY = Math.max(0, elementY - margin);
+      const cropWidth = Math.min(
+        img.width / dpr - cropX,
+        displayWidth + margin * 2
+      );
+      const cropHeight = Math.min(
+        img.height / dpr - cropY,
+        displayHeight + margin * 2
+      );
+
+      // Create canvas for cropped image
+      const canvas = document.createElement('canvas');
+      canvas.width = cropWidth * dpr;
+      canvas.height = cropHeight * dpr;
+      const ctx = canvas.getContext('2d');
+
+      // Calculate source coordinates (in actual image pixels)
+      const srcX = cropX * dpr;
+      const srcY = cropY * dpr;
+      const srcWidth = cropWidth * dpr;
+      const srcHeight = cropHeight * dpr;
+
+      // Draw cropped portion of screenshot
+      ctx.drawImage(
+        img,
+        srcX,
+        srcY,
+        srcWidth,
+        srcHeight, // Source
+        0,
+        0,
+        canvas.width,
+        canvas.height // Destination
+      );
+
+      // Calculate element position relative to cropped area
+      const relativeX = (elementX - cropX) * dpr;
+      const relativeY = (elementY - cropY) * dpr;
+      let highlightWidth = displayWidth * dpr;
+      let highlightHeight = displayHeight * dpr;
 
       // Draw red highlight border
       ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = 4 * dpr;
+      ctx.lineWidth = 3 * dpr;
       ctx.setLineDash([]);
-      ctx.strokeRect(highlightX, highlightY, highlightWidth, highlightHeight);
+      ctx.strokeRect(relativeX, relativeY, highlightWidth, highlightHeight);
 
       // For small elements, add a crosshair to mark exact position
       if (isSmallElement) {
         ctx.strokeStyle = '#e74c3c';
         ctx.lineWidth = 2 * dpr;
-        // Draw crosshair
-        const centerX = highlightX + highlightWidth / 2;
-        const centerY = highlightY + highlightHeight / 2;
+        const centerX = relativeX + highlightWidth / 2;
+        const centerY = relativeY + highlightHeight / 2;
         const crossSize = 10 * dpr;
 
         // Horizontal line
@@ -245,30 +263,23 @@ async function addHighlightToScreenshot(
 
       ctx.fillStyle = '#e74c3c';
       ctx.fillRect(
-        highlightX,
-        Math.max(0, highlightY - labelHeight),
+        relativeX,
+        Math.max(0, relativeY - labelHeight),
         labelWidth,
         labelHeight
       );
 
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
+      ctx.fillStyle = 'white';
       ctx.fillText(
         tagInfo,
-        highlightX + labelPadding,
-        Math.max(0, highlightY - labelHeight) + 5 * dpr
+        relativeX + labelPadding,
+        Math.max(labelHeight - 6 * dpr, relativeY - 6 * dpr)
       );
 
-      console.log('Screenshot captured with highlight');
-
-      // Get compression settings (set during analysis)
-      const quality = window._screenshotCompressionQuality || 0.6;
-      const maxWidth = window._screenshotMaxWidth || 800;
-
-      // Compress image to reduce size
-      const compressedDataUrl = compressImage(canvas, quality, maxWidth);
-      resolve(compressedDataUrl);
+      // Compress and resolve
+      compressImage(canvas, (compressedDataUrl) => {
+        resolve(compressedDataUrl);
+      });
     };
 
     img.onerror = () => {
@@ -281,14 +292,42 @@ async function addHighlightToScreenshot(
 }
 
 /**
+ * Old function - kept for fallback but now calls cropAndHighlightElement
+ */
+async function addHighlightToScreenshot(
+  screenshotDataUrl,
+  elementX,
+  elementY,
+  elementWidth,
+  elementHeight,
+  tagName
+) {
+  // Redirect to new cropped version
+  return cropAndHighlightElement(
+    screenshotDataUrl,
+    elementX,
+    elementY,
+    elementWidth,
+    elementHeight,
+    tagName,
+    false
+  );
+}
+
+/**
  * Compress and resize image to reduce storage size
  * @param {HTMLCanvasElement} canvas - Canvas with the image
- * @param {number} quality - JPEG quality (0.0 to 1.0)
+ * @param {function|number} qualityOrCallback - Callback function or quality number (0.0 to 1.0)
  * @param {number} maxWidth - Maximum width in pixels (default: 800)
- * @returns {string} Compressed data URL
+ * @returns {string|undefined} Compressed data URL (if no callback) or undefined (if callback)
  */
-function compressImage(canvas, quality = 0.6, maxWidth = 800) {
+function compressImage(canvas, qualityOrCallback = 0.6, maxWidth = 800) {
   try {
+    // Check if first parameter is a callback
+    const isCallback = typeof qualityOrCallback === 'function';
+    const quality = isCallback ? 0.6 : qualityOrCallback;
+    const callback = isCallback ? qualityOrCallback : null;
+
     // Calculate new dimensions maintaining aspect ratio
     const originalWidth = canvas.width;
     const originalHeight = canvas.height;
@@ -303,7 +342,12 @@ function compressImage(canvas, quality = 0.6, maxWidth = 800) {
 
     // If already small enough, just compress
     if (newWidth === originalWidth && newHeight === originalHeight) {
-      return canvas.toDataURL('image/jpeg', quality);
+      const result = canvas.toDataURL('image/jpeg', quality);
+      if (callback) {
+        callback(result);
+        return;
+      }
+      return result;
     }
 
     // Create new canvas with smaller dimensions
@@ -320,11 +364,23 @@ function compressImage(canvas, quality = 0.6, maxWidth = 800) {
     ctx.drawImage(canvas, 0, 0, newWidth, newHeight);
 
     // Return as compressed JPEG
-    return smallCanvas.toDataURL('image/jpeg', quality);
+    const result = smallCanvas.toDataURL('image/jpeg', quality);
+    if (callback) {
+      callback(result);
+      return;
+    }
+    return result;
   } catch (error) {
     console.error('Error compressing image:', error);
     // Fallback to original with JPEG compression
-    return canvas.toDataURL('image/jpeg', quality);
+    const quality =
+      typeof qualityOrCallback === 'number' ? qualityOrCallback : 0.6;
+    const result = canvas.toDataURL('image/jpeg', quality);
+    if (typeof qualityOrCallback === 'function') {
+      qualityOrCallback(result);
+      return;
+    }
+    return result;
   }
 }
 
