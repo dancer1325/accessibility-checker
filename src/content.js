@@ -67,19 +67,58 @@ async function captureElementScreenshot(element, container = null) {
     const elementRect = element.getBoundingClientRect();
 
     // Check if element exists in DOM (even if 0x0)
-    // For 0x0 elements (empty containers), we still want to capture with context
+    // For 0x0 elements (empty containers), we need to find a visible parent
     const is0x0 = elementRect.width === 0 && elementRect.height === 0;
-    const isTooSmall =
-      (elementRect.width < 5 && elementRect.height < 5) || is0x0;
+    const isTooSmall = elementRect.width < 5 && elementRect.height < 5;
 
-    // For very small or 0x0 elements (like empty icon containers), we'll still capture
-    // but expand the capture area to show context
-    const captureSmallElement = isTooSmall;
+    // For 0x0 elements, find the first visible parent to capture
+    let captureTarget = element;
+    let captureTargetRect = elementRect;
+
+    if (is0x0) {
+      console.log('Element is 0x0, searching for visible parent...');
+
+      // Walk up the DOM tree to find a visible parent
+      let parent = element.parentElement;
+      let attempts = 0;
+      const maxAttempts = 10; // Limit search depth
+
+      while (parent && attempts < maxAttempts) {
+        const parentRect = parent.getBoundingClientRect();
+
+        // Found a parent with visible dimensions
+        if (parentRect.width > 0 && parentRect.height > 0) {
+          captureTarget = parent;
+          captureTargetRect = parentRect;
+          console.log('Found visible parent:', {
+            tag: parent.tagName,
+            class: parent.className,
+            width: parentRect.width,
+            height: parentRect.height,
+          });
+          break;
+        }
+
+        parent = parent.parentElement;
+        attempts++;
+      }
+
+      // If we couldn't find a visible parent, use body as fallback
+      if (captureTargetRect.width === 0 && captureTargetRect.height === 0) {
+        console.warn('Could not find visible parent, using body');
+        captureTarget = document.body;
+        captureTargetRect = document.body.getBoundingClientRect();
+      }
+    }
+
+    const captureSmallElement = is0x0 || isTooSmall;
 
     if (captureSmallElement) {
-      console.log('Capturing small/empty element with expanded context:', {
+      console.log('Capturing small/empty element with parent context:', {
         element: element.tagName,
-        rect: elementRect,
+        elementRect: elementRect,
+        captureTarget: captureTarget.tagName,
+        captureRect: captureTargetRect,
         is0x0: is0x0,
       });
     } else {
@@ -94,8 +133,8 @@ async function captureElementScreenshot(element, container = null) {
     const originalScrollY = window.scrollY;
 
     try {
-      // Scroll element into view (centered if possible)
-      element.scrollIntoView({
+      // Scroll the capture target into view
+      captureTarget.scrollIntoView({
         behavior: 'instant',
         block: 'center',
         inline: 'center',
@@ -104,8 +143,10 @@ async function captureElementScreenshot(element, container = null) {
       // Wait for scroll to complete
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Get element position after scroll
+      // Get positions after scroll
       const elementRectAfterScroll = element.getBoundingClientRect();
+      const captureTargetRectAfterScroll =
+        captureTarget.getBoundingClientRect();
 
       // Capture screenshot via background script
       const response = await new Promise((resolve) => {
@@ -128,16 +169,33 @@ async function captureElementScreenshot(element, container = null) {
         );
       }
 
-      // Crop and highlight element only (not full viewport)
-      return await cropAndHighlightElement(
-        response.dataUrl,
-        elementRectAfterScroll.left,
-        elementRectAfterScroll.top,
-        elementRectAfterScroll.width,
-        elementRectAfterScroll.height,
-        element.tagName,
-        captureSmallElement
-      );
+      // If we're capturing a parent, we need to highlight the original element position
+      // within the parent's screenshot
+      if (is0x0) {
+        // Capture the parent but mark where the 0x0 element should be
+        return await cropAndHighlightParentWithMarker(
+          response.dataUrl,
+          captureTargetRectAfterScroll.left,
+          captureTargetRectAfterScroll.top,
+          captureTargetRectAfterScroll.width,
+          captureTargetRectAfterScroll.height,
+          elementRectAfterScroll.left,
+          elementRectAfterScroll.top,
+          element.tagName,
+          captureTarget.tagName
+        );
+      } else {
+        // Normal element capture
+        return await cropAndHighlightElement(
+          response.dataUrl,
+          elementRectAfterScroll.left,
+          elementRectAfterScroll.top,
+          elementRectAfterScroll.width,
+          elementRectAfterScroll.height,
+          element.tagName,
+          captureSmallElement
+        );
+      }
     } catch (error) {
       console.error('Error during screenshot capture:', error);
       // Restore scroll position
@@ -274,6 +332,173 @@ async function cropAndHighlightElement(
         tagInfo,
         relativeX + labelPadding,
         Math.max(labelHeight - 6 * dpr, relativeY - 6 * dpr)
+      );
+
+      // Compress and resolve
+      compressImage(canvas, (compressedDataUrl) => {
+        resolve(compressedDataUrl);
+      });
+    };
+
+    img.onerror = () => {
+      console.error('Failed to load screenshot image');
+      resolve(null);
+    };
+
+    img.src = screenshotDataUrl;
+  });
+}
+
+/**
+ * Crop screenshot to parent element and mark where the 0x0 element is located
+ * This is used for empty/invisible elements to show their context
+ */
+async function cropAndHighlightParentWithMarker(
+  screenshotDataUrl,
+  parentX,
+  parentY,
+  parentWidth,
+  parentHeight,
+  elementX,
+  elementY,
+  elementTag,
+  parentTag
+) {
+  return new Promise((resolve) => {
+    const img = new Image();
+
+    img.onload = () => {
+      const dpr = window.devicePixelRatio || 1;
+
+      // Define margins around parent
+      const margin = 30;
+
+      // Calculate crop area for parent with margins
+      const cropX = Math.max(0, parentX - margin);
+      const cropY = Math.max(0, parentY - margin);
+      const cropWidth = Math.min(
+        img.width / dpr - cropX,
+        parentWidth + margin * 2
+      );
+      const cropHeight = Math.min(
+        img.height / dpr - cropY,
+        parentHeight + margin * 2
+      );
+
+      // Create canvas for cropped image
+      const canvas = document.createElement('canvas');
+      canvas.width = cropWidth * dpr;
+      canvas.height = cropHeight * dpr;
+      const ctx = canvas.getContext('2d');
+
+      // Calculate source coordinates (in actual image pixels)
+      const srcX = cropX * dpr;
+      const srcY = cropY * dpr;
+      const srcWidth = cropWidth * dpr;
+      const srcHeight = cropHeight * dpr;
+
+      // Draw cropped portion of screenshot
+      ctx.drawImage(
+        img,
+        srcX,
+        srcY,
+        srcWidth,
+        srcHeight, // Source
+        0,
+        0,
+        canvas.width,
+        canvas.height // Destination
+      );
+
+      // Calculate parent position relative to cropped area
+      const relativeParentX = (parentX - cropX) * dpr;
+      const relativeParentY = (parentY - cropY) * dpr;
+      const relativeParentWidth = parentWidth * dpr;
+      const relativeParentHeight = parentHeight * dpr;
+
+      // Draw blue box around parent (context)
+      ctx.strokeStyle = '#3498db';
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([5 * dpr, 5 * dpr]);
+      ctx.strokeRect(
+        relativeParentX,
+        relativeParentY,
+        relativeParentWidth,
+        relativeParentHeight
+      );
+      ctx.setLineDash([]);
+
+      // Calculate 0x0 element marker position relative to cropped area
+      const markerX = (elementX - cropX) * dpr;
+      const markerY = (elementY - cropY) * dpr;
+      const markerSize = 20 * dpr;
+
+      // Draw red crosshair to mark the 0x0 element position
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 3 * dpr;
+
+      // Horizontal line
+      ctx.beginPath();
+      ctx.moveTo(markerX - markerSize, markerY);
+      ctx.lineTo(markerX + markerSize, markerY);
+      ctx.stroke();
+
+      // Vertical line
+      ctx.beginPath();
+      ctx.moveTo(markerX, markerY - markerSize);
+      ctx.lineTo(markerX, markerY + markerSize);
+      ctx.stroke();
+
+      // Draw circle around crosshair
+      ctx.beginPath();
+      ctx.arc(markerX, markerY, markerSize / 2, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Add label for the 0x0 element
+      const elementInfo = `<${elementTag.toLowerCase()}> (0x0 - empty)`;
+      const labelPadding = 8 * dpr;
+      const labelHeight = 24 * dpr;
+      ctx.font = `bold ${12 * dpr}px Arial`;
+      const labelWidth = ctx.measureText(elementInfo).width + labelPadding * 2;
+
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(
+        markerX - labelWidth / 2,
+        Math.max(0, markerY - markerSize - labelHeight - 5 * dpr),
+        labelWidth,
+        labelHeight
+      );
+
+      ctx.fillStyle = 'white';
+      ctx.fillText(
+        elementInfo,
+        markerX - labelWidth / 2 + labelPadding,
+        Math.max(
+          labelHeight - 6 * dpr,
+          markerY - markerSize - labelHeight - 5 * dpr + labelHeight - 6 * dpr
+        )
+      );
+
+      // Add label for parent context (at top of parent box)
+      const parentInfo = `Parent: <${parentTag.toLowerCase()}>`;
+      ctx.font = `${11 * dpr}px Arial`;
+      const parentLabelWidth =
+        ctx.measureText(parentInfo).width + labelPadding * 2;
+      const parentLabelHeight = 20 * dpr;
+
+      ctx.fillStyle = '#3498db';
+      ctx.fillRect(
+        relativeParentX,
+        Math.max(0, relativeParentY - parentLabelHeight),
+        parentLabelWidth,
+        parentLabelHeight
+      );
+
+      ctx.fillStyle = 'white';
+      ctx.fillText(
+        parentInfo,
+        relativeParentX + labelPadding,
+        Math.max(parentLabelHeight - 6 * dpr, relativeParentY - 6 * dpr)
       );
 
       // Compress and resolve
