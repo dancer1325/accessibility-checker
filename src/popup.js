@@ -1132,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <body>
     <div class="container">
         <h1>🔍 Accessibility Audit Report</h1>
-        <p style="color: #7f8c8d;">Generated on: ${new Date().toLocaleString()} | Extension v1.8.1</p>
+        <p style="color: #7f8c8d;">Generated on: ${new Date().toLocaleString()} | Extension v1.8.5</p>
 `;
 
     // Calculate summary
