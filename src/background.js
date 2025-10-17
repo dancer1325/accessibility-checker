@@ -1,8 +1,8 @@
-// ===== BACKGROUND SERVICE WORKER =====
+// ===== BACKGROUND SCRIPT =====
 // Maintains the active flow state and detects page changes
 // Works independently of the popup (which closes when losing focus)
 
-console.log('Background service worker loaded');
+console.log('Background script loaded');
 
 // Track the last analyzed URL per tab to avoid duplicate analyses
 const lastAnalyzedUrls = new Map();
@@ -51,7 +51,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
           await chrome.scripting.executeScript({
             target: { tabId: tabId },
-            files: ['src/report.js', 'src/content.js'],
+            files: [
+              'src/browser-polyfill.js',
+              'src/report.js',
+              'src/content.js',
+            ],
           });
 
           console.log('Scripts injected successfully');

@@ -173,10 +173,10 @@ document.addEventListener('DOMContentLoaded', function () {
           files: ['styles/content.css'],
         });
 
-        // Inject JavaScript files
+        // Inject JavaScript files (polyfill first for Firefox compatibility)
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['src/report.js', 'src/content.js'],
+          files: ['src/browser-polyfill.js', 'src/report.js', 'src/content.js'],
         });
       } catch (injectionError) {
         console.log(
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['src/report.js', 'src/content.js'],
+          files: ['src/browser-polyfill.js', 'src/report.js', 'src/content.js'],
         });
       } catch (injectionError) {
         console.log(

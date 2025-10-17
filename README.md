@@ -1,23 +1,24 @@
-# Accessibility Checker - Chrome Extension v1.7.0
+# Accessibility Checker - Browser Extension v1.8.5
 
-A Chrome extension to audit accessibility issues within specific page containers, with support for multi-page flows, 16 WCAG 2.1 Level AA checks, and **full container screenshots** with scrollable modal view.
+A cross-browser extension (Chrome & Firefox) to audit accessibility issues within specific page containers, with support for multi-page flows, 16 WCAG 2.1 Level AA checks, and **full container screenshots** with scrollable modal view.
 
 ---
 
 ## 🚀 Installation
 
-### From Source Code
+### Chrome / Edge / Brave
 
 1. **Download or clone this repository**
 
    ```bash
-   git clone https://github.com/your-username/accessibility-checker.git
+   git clone https://github.com/soyjairocosta/accessibility-checker.git
    cd accessibility-checker
    ```
 
-2. **Open Chrome Extensions page**
+2. **Open Extensions page**
 
-   - Navigate to `chrome://extensions/`
+   - Chrome: Navigate to `chrome://extensions/`
+   - Edge: Navigate to `edge://extensions/`
    - Enable "Developer mode" (top right corner)
 
 3. **Load the extension**
@@ -28,6 +29,32 @@ A Chrome extension to audit accessibility issues within specific page containers
 4. **Confirm installation**
    - You'll see the extension icon in the toolbar
    - Click the icon to open the popup
+
+### Firefox
+
+1. **Download or clone this repository**
+
+   ```bash
+   git clone https://github.com/soyjairocosta/accessibility-checker.git
+   cd accessibility-checker
+   ```
+
+2. **Load temporarily for testing**
+
+   - Navigate to `about:debugging#/runtime/this-firefox`
+   - Click "Load Temporary Add-on"
+   - Select the `manifest.json` file
+
+3. **Or install permanently** (requires signing)
+
+   ```bash
+   npm install
+   npm run firefox:build
+   ```
+
+   Then submit the generated `.xpi` file to Firefox Add-ons.
+
+📖 **For detailed Firefox instructions**, see [FIREFOX_COMPATIBILITY.md](FIREFOX_COMPATIBILITY.md)
 
 ---
 

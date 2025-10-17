@@ -1,0 +1,25 @@
+{
+  "name": "accessibility-checker",
+  "version": "1.8.5",
+  "description": "Comprehensive accessibility audit extension for Chrome and Firefox",
+  "author": "Jairo Costa (@soyJairoCosta)",
+  "license": "MIT",
+  "scripts": {
+    "firefox": "web-ext run --source-dir=. --start-url about:debugging#/runtime/this-firefox",
+    "firefox:build": "web-ext build --source-dir=. --artifacts-dir=./dist",
+    "firefox:lint": "web-ext lint --source-dir=.",
+    "chrome": "echo 'Load extension in Chrome from: chrome://extensions/ (Enable Developer Mode)'",
+    "package": "npm run firefox:build"
+  },
+  "devDependencies": {
+    "web-ext": "^7.11.0"
+  },
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "wcag",
+    "chrome-extension",
+    "firefox-addon",
+    "audit"
+  ]
+}

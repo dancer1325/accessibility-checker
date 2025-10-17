@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+web-ext-artifacts/
+
+# Firefox specific
+*.xpi
+
+# Chrome specific
+*.crx
+*.pem
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
