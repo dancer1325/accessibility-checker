@@ -40,8 +40,15 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     console.log('Auto-analyzing page...');
 
     // Wait a bit for the page to fully render
+    const expectedUrl = tab.url;
     setTimeout(async () => {
       try {
+        // Verify the tab still shows the expected URL (guard against rapid navigation)
+        const currentTab = await chrome.tabs.get(tabId);
+        if (currentTab.url !== expectedUrl) {
+          console.log('Tab URL changed during wait, skipping stale analysis');
+          return;
+        }
         // Inject scripts dynamically before analysis
         try {
           await chrome.scripting.insertCSS({
@@ -110,11 +117,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Reset tracking when flow starts
     lastAnalyzedUrls.clear();
     sendResponse({ success: true });
+    return false; // Synchronous — no need to keep channel open
   } else if (request.action === 'flowFinished') {
     console.log('Flow finished');
     // Clear tracking when flow ends
     lastAnalyzedUrls.clear();
     sendResponse({ success: true });
+    return false; // Synchronous
   } else if (request.action === 'captureVisibleTab') {
     // Capture screenshot of visible tab (full page)
     (async () => {
@@ -136,7 +145,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })();
     return true; // Keep message channel open
   }
-  return true;
 });
 
 console.log('Background service worker ready');

@@ -4,13 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data: blob:;">
     <title>Accessibility Checker</title>
     <link rel="stylesheet" href="styles/popup.css">
 </head>
 
 <body>
     <div class="container">
-        <h1>Accessibility Checker</h1>
+        <div class="header">
+            <h1>Accessibility Checker</h1>
+            <span class="version-badge">v1.8.5</span>
+        </div>
 
         <div class="form-group">
             <label for="divClass">Target Div Class:</label>
@@ -18,200 +22,222 @@
             <small class="hint-text">Enter class name (without dot) or tag name</small>
         </div>
 
-        <div class="options-section">
-            <h2>Basic Checks</h2>
+        <!-- Tabs Navigation -->
+        <div class="tabs" role="tablist">
+            <button class="tab active" role="tab" aria-selected="true" aria-controls="panel-checks" id="tab-checks">Checks</button>
+            <button class="tab" role="tab" aria-selected="false" aria-controls="panel-analyze" id="tab-analyze">Analyze</button>
+            <button class="tab" role="tab" aria-selected="false" aria-controls="panel-report" id="tab-report">Report</button>
+        </div>
 
-            <div class="option-item">
-                <label class="switch-label">
-                    <input type="checkbox" id="checkFontSize" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="option-text">Text Size (min 14px)</span>
-            </div>
+        <!-- Tab Panel: Checks -->
+        <div class="tab-panel active" id="panel-checks" role="tabpanel" aria-labelledby="tab-checks">
+            <div class="options-section">
+                <h2>Basic Checks</h2>
 
-            <div class="option-item">
-                <label class="switch-label">
-                    <input type="checkbox" id="checkIconSize" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="option-text">Clickable Icons (min 24px)</span>
-            </div>
-
-            <div class="option-item">
-                <label class="switch-label">
-                    <input type="checkbox" id="checkContrast" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="option-text">Color Contrast</span>
-            </div>
-
-            <div class="option-item">
-                <label class="switch-label">
-                    <input type="checkbox" id="checkBorderContrast" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="option-text">Border Contrast</span>
-            </div>
-
-            <div class="option-item">
-                <label class="switch-label">
-                    <input type="checkbox" id="checkAriaLabel" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="option-text">ARIA Labels</span>
-            </div>
-
-            <div class="option-item">
-                <label class="switch-label">
-                    <input type="checkbox" id="checkEmptyElements">
-                    <span class="slider"></span>
-                </label>
-                <span class="option-text">Empty Clickable Elements (0x0px)</span>
-            </div>
-
-            <!-- Advanced Checks Expandable -->
-            <div class="advanced-section">
-                <button id="toggleAdvanced" class="btn-toggle-advanced">
-                    <span class="toggle-icon">▶</span>
-                    <span class="toggle-text">Advanced Checks (10)</span>
-                </button>
-
-                <div id="advancedOptions" class="advanced-options" style="display: none;">
-                    <h3>🔴 High Priority</h3>
-
+                <div class="options-grid">
                     <div class="option-item">
                         <label class="switch-label">
-                            <input type="checkbox" id="checkFocusVisible">
+                            <input type="checkbox" id="checkFontSize" checked aria-label="Text Size (min 14px)">
                             <span class="slider"></span>
                         </label>
-                        <span class="option-text">Focus Visible (keyboard navigation)</span>
+                        <span class="option-text">Text Size (min 14px)</span>
                     </div>
 
                     <div class="option-item">
                         <label class="switch-label">
-                            <input type="checkbox" id="checkTabOrder">
+                            <input type="checkbox" id="checkIconSize" checked aria-label="Clickable Icons (min 24px)">
                             <span class="slider"></span>
                         </label>
-                        <span class="option-text">Tab Order (tabindex issues)</span>
+                        <span class="option-text">Clickable Icons (min 24px)</span>
                     </div>
 
                     <div class="option-item">
                         <label class="switch-label">
-                            <input type="checkbox" id="checkAltText">
+                            <input type="checkbox" id="checkContrast" checked aria-label="Color Contrast">
                             <span class="slider"></span>
                         </label>
-                        <span class="option-text">Alt Text (images & icons)</span>
-                    </div>
-
-                    <h3>🟡 Medium Priority</h3>
-
-                    <div class="option-item">
-                        <label class="switch-label">
-                            <input type="checkbox" id="checkFormLabels">
-                            <span class="slider"></span>
-                        </label>
-                        <span class="option-text">Form Labels (input associations)</span>
+                        <span class="option-text">Color Contrast</span>
                     </div>
 
                     <div class="option-item">
                         <label class="switch-label">
-                            <input type="checkbox" id="checkHeadings">
+                            <input type="checkbox" id="checkBorderContrast" checked aria-label="Border Contrast">
                             <span class="slider"></span>
                         </label>
-                        <span class="option-text">Headings Structure (h1-h6 hierarchy)</span>
+                        <span class="option-text">Border Contrast</span>
                     </div>
 
                     <div class="option-item">
                         <label class="switch-label">
-                            <input type="checkbox" id="checkKeyboardTraps">
+                            <input type="checkbox" id="checkAriaLabel" checked aria-label="ARIA Labels">
                             <span class="slider"></span>
                         </label>
-                        <span class="option-text">Keyboard Traps (focus management)</span>
+                        <span class="option-text">ARIA Labels</span>
                     </div>
 
                     <div class="option-item">
                         <label class="switch-label">
-                            <input type="checkbox" id="checkHiddenContent">
+                            <input type="checkbox" id="checkEmptyElements" aria-label="Empty Clickable Elements (0x0px)">
                             <span class="slider"></span>
                         </label>
-                        <span class="option-text">Hidden Content (aria-hidden issues)</span>
+                        <span class="option-text">Empty Elements (0x0px)</span>
                     </div>
+                </div>
 
-                    <h3>🟢 Low Priority</h3>
+                <h2>Advanced Checks</h2>
 
+                <div class="options-grid">
                     <div class="option-item">
                         <label class="switch-label">
-                            <input type="checkbox" id="checkColorDependence">
+                            <input type="checkbox" id="checkFocusVisible" aria-label="Focus Visible (keyboard navigation)">
                             <span class="slider"></span>
                         </label>
-                        <span class="option-text">Color Dependence (visual-only info)</span>
-                    </div>
-
-                    <div class="option-item">
-                        <label class="switch-label">
-                            <input type="checkbox" id="checkLanguage">
-                            <span class="slider"></span>
-                        </label>
-                        <span class="option-text">Language Attributes (lang)</span>
+                        <span class="option-text">Focus Visible</span>
                     </div>
 
                     <div class="option-item">
                         <label class="switch-label">
-                            <input type="checkbox" id="checkLinkText">
+                            <input type="checkbox" id="checkTabOrder" aria-label="Tab Order (tabindex issues)">
                             <span class="slider"></span>
                         </label>
-                        <span class="option-text">Link Text (descriptive links)</span>
+                        <span class="option-text">Tab Order</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkAltText" aria-label="Alt Text (images and icons)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Alt Text</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkFormLabels" aria-label="Form Labels (input associations)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Form Labels</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkHeadings" aria-label="Headings Structure (h1-h6 hierarchy)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Headings Structure</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkKeyboardTraps" aria-label="Keyboard Traps (focus management)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Keyboard Traps</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkHiddenContent" aria-label="Hidden Content (aria-hidden issues)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Hidden Content</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkColorDependence" aria-label="Color Dependence (visual-only info)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Color Dependence</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkLanguage" aria-label="Language Attributes (lang)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Language Attributes</span>
+                    </div>
+
+                    <div class="option-item">
+                        <label class="switch-label">
+                            <input type="checkbox" id="checkLinkText" aria-label="Link Text (descriptive links)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="option-text">Link Text</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <button id="runAnalysis" class="btn-primary">Run Analysis</button>
+        <!-- Tab Panel: Analyze -->
+        <div class="tab-panel" id="panel-analyze" role="tabpanel" aria-labelledby="tab-analyze">
+            <div id="analyzeContainer" data-state="idle">
 
-        <!-- Flow Controls -->
-        <div class="flow-controls">
-            <button id="startFlow" class="btn-flow">🎬 Start Flow</button>
-            <button id="addPageToFlow" class="btn-flow-add" style="display: none;">➕ Analyze Page</button>
-            <button id="finishFlow" class="btn-flow-finish" style="display: none;">✅ Finish Flow</button>
+                <!-- State: idle (default) -->
+                <div id="idleView">
+                    <p class="analyze-desc">Run an accessibility audit on the current page.</p>
+                    <button id="runAnalysis" class="btn-primary">Run Analysis</button>
+                    <button id="startFlow" class="btn-flow">Start Flow</button>
+                </div>
+
+                <!-- State: naming -->
+                <div id="namingView">
+                    <label for="flowNameField" class="sr-only">Flow name</label>
+                    <div class="input-with-action">
+                        <input type="text" id="flowNameField" class="input-field" placeholder="Enter flow name" />
+                        <button id="confirmFlow" class="btn-flow-add" aria-label="Confirm flow name">Start</button>
+                    </div>
+                </div>
+
+                <!-- State: active -->
+                <div id="activeView" class="flow-active-card">
+                    <div class="flow-active-header">Flow started</div>
+                    <div id="flowName" class="flow-active-name"></div>
+                    <div class="flow-active-actions">
+                        <button id="analyzePage" class="btn-primary">Analyze Page</button>
+                        <button id="finishFlow" class="btn-ghost">Finish Flow</button>
+                    </div>
+                </div>
+
+            </div>
+            <div id="status" class="status-message"></div>
         </div>
 
-        <div id="flowStatus" class="flow-status-message" style="display: none;"></div>
+        <!-- Tab Panel: Report -->
+        <div class="tab-panel" id="panel-report" role="tabpanel" aria-labelledby="tab-report">
+            <div class="report-section">
+                <div class="report-summary" id="reportSummary">
+                    <p class="summary-text">No errors collected yet. Run analysis to start.</p>
+                </div>
 
-        <div id="status" class="status-message"></div>
+                <div class="report-actions" id="reportActions" style="display: none;">
+                    <div class="btn-row">
+                        <button id="downloadReport" class="btn-success" aria-label="Download Excel report">📊 Excel</button>
+                        <button id="downloadHtmlReport" class="btn-success" aria-label="Download HTML report with screenshots">📸 HTML</button>
+                    </div>
+                    <button id="clearReport" class="btn-link-danger" aria-label="Clear all report data">Clear all data</button>
+                </div>
 
-        <!-- Report Section -->
-        <div class="report-section">
-            <h2>Audit Report</h2>
-
-            <div class="report-summary" id="reportSummary">
-                <p class="summary-text">No errors collected yet. Run analysis to start.</p>
-            </div>
-
-            <div class="report-actions">
-                <button id="downloadReport" class="btn-success">Download Excel</button>
-                <button id="downloadHtmlReport" class="btn-success">📸 Download HTML (with images)</button>
-                <button id="clearReport" class="btn-danger">Clear Report</button>
-            </div>
-
-            <!-- Report Table -->
-            <div id="reportTable" class="report-table-container" style="display: none;">
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th>Flow</th>
-                            <th>Page</th>
-                            <th>Errors</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportTableBody">
-                    </tbody>
-                </table>
+                <div id="reportTable" class="report-table-container" style="display: none;">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Flow</th>
+                                <th>Page</th>
+                                <th>Errors</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            v1.8.1 by @soyJairoCosta
+            by @soyJairoCosta
         </div>
     </div>
 

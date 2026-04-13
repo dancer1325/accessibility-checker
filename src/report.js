@@ -121,12 +121,34 @@ function getErrorCode(message) {
     return 'FONT-SIZE';
   } else if (message.includes('Clickable element too small')) {
     return 'ICON-SIZE';
-  } else if (message.includes('Low contrast')) {
+  } else if (message.includes('Poor text contrast') || message.includes('Low contrast')) {
     return 'CONTRAST';
-  } else if (message.includes('Missing ARIA')) {
+  } else if (message.includes('Poor border contrast')) {
+    return 'BORDER-CONTRAST';
+  } else if (message.includes('Missing ARIA') || message.includes('missing aria-label') || message.includes('missing accessible label')) {
     return 'ARIA-LABEL';
   } else if (message.includes('Empty clickable element')) {
     return 'EMPTY-ELEMENT';
+  } else if (message.includes('Focus indicator')) {
+    return 'FOCUS-VISIBLE';
+  } else if (message.includes('tabindex') || message.includes('Questionable tabindex')) {
+    return 'TAB-ORDER';
+  } else if (message.includes('Missing alt') || message.includes('Empty alt') || message.includes('SVG accessibility') || message.includes('Icon accessibility')) {
+    return 'ALT-TEXT';
+  } else if (message.includes('Form label') || message.includes('Missing label') || message.includes('Required field')) {
+    return 'FORM-LABELS';
+  } else if (message.includes('Heading') || message.includes('heading') || message.includes('Multiple H1')) {
+    return 'HEADINGS';
+  } else if (message.includes('Keyboard trap') || message.includes('Off-screen focusable')) {
+    return 'KEYBOARD-TRAP';
+  } else if (message.includes('aria-hidden') || message.includes('Hidden content')) {
+    return 'HIDDEN-CONTENT';
+  } else if (message.includes('Color dependence') || message.includes('Link styling')) {
+    return 'COLOR-DEPENDENCE';
+  } else if (message.includes('Missing language') || message.includes('Language mismatch')) {
+    return 'LANGUAGE';
+  } else if (message.includes('Non-descriptive link') || message.includes('Empty link')) {
+    return 'LINK-TEXT';
   }
   return 'UNKNOWN';
 }
@@ -228,6 +250,20 @@ async function storeErrorsInReport(errors, customFlowName = null) {
             error.screenshot = null;
           });
           report[flowName][pageName].errors = pageErrors;
+
+          // Re-check size after stripping screenshots
+          const strippedSize = new Blob([JSON.stringify(report)]).size;
+          if (strippedSize > 4.8 * 1024 * 1024) {
+            console.warn('[storeErrorsInReport] Still too large after removing screenshots, truncating HTML fields...');
+            pageErrors.forEach((error) => {
+              error.html = '';
+              error.parentHTML = '';
+              if (error.innerText && error.innerText.length > 50) {
+                error.innerText = error.innerText.substring(0, 50) + '...';
+              }
+            });
+            report[flowName][pageName].errors = pageErrors;
+          }
         } else if (sizeInBytes > 4.5 * 1024 * 1024) {
           console.warn(
             '[storeErrorsInReport] Report large (>4.5MB), removing 50% of screenshots...'
