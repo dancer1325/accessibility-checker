@@ -4,6 +4,11 @@
 
 console.log('Background service worker loaded');
 
+// Open side panel when the extension icon is clicked
+chrome.action.onClicked.addListener(async (tab) => {
+  await chrome.sidePanel.open({ tabId: tab.id });
+});
+
 // Track the last analyzed URL per tab to avoid duplicate analyses
 const lastAnalyzedUrls = new Map();
 

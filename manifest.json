@@ -4,12 +4,14 @@
   "author": "Jairo Costa",
   "version": "1.8.5",
   "description": "Comprehensive accessibility audit with 16 checks including advanced WCAG 2.1 criteria screenshots by Jairo Costa (@soyJairoCosta)",
-  "permissions": ["activeTab", "scripting", "storage", "notifications", "tabs"],
+  "permissions": ["activeTab", "scripting", "storage", "notifications", "tabs", "sidePanel"],
   "background": {
     "service_worker": "src/background.js"
   },
+  "side_panel": {
+    "default_path": "popup.html"
+  },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
