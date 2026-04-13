@@ -960,8 +960,7 @@ function highlightAuditContainer(container) {
   // Add visual highlight to the container being audited
   container.classList.add('a11y-audit-container');
 
-  // Apply subtle but visible styling
-  container.style.background = 'rgba(250, 253, 238, 0.5)'; // Light yellow-green with transparency
+  // Apply subtle but visible styling (border only, no background change)
   container.style.border = '3px dashed #4caf50'; // Green dashed border
   container.style.borderRadius = '8px';
   container.style.boxShadow = '0 0 0 4px rgba(76, 175, 80, 0.1)'; // Soft green glow
