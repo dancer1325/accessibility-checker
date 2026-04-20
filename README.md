@@ -1,10 +1,18 @@
 # Accessibility Checker - Browser Extension v1.8.5
 
-A cross-browser extension (Chrome & Firefox) to audit accessibility issues within specific page containers, with support for multi-page flows, 16 WCAG 2.1 Level AA checks, and **full container screenshots** with scrollable modal view.
+* == cross-browser extension
+  * allows
+    * | specific page containers,
+      * audit accessibility issues
+    * multi-page flow analysis
+    * FULL container screenshots (scrollable modal view)
+  * follows
+    * [WCAG 2.1 Level AA](https://www.w3.org/WAI/WCAG21/quickref/)'s 16 checks
 
----
+## requirements
+* Firefox v109+
 
-## 🚀 Installation
+## 🚀how to install?
 
 ### Chrome / Edge / Brave
 
@@ -17,18 +25,19 @@ A cross-browser extension (Chrome & Firefox) to audit accessibility issues withi
 
 2. **Open Extensions page**
 
-   - Chrome: Navigate to `chrome://extensions/`
-   - Edge: Navigate to `edge://extensions/`
+   - | 
+     - Chrome,
+       - chrome://extensions/
+     - Edge,
+       - edge://extensions/
    - Enable "Developer mode" (top right corner)
 
 3. **Load the extension**
-
-   - Click "Load unpacked"
-   - Select the `accessibility-checker` folder
+   - Click "Load unpacked" > Select the "accessibility-checker" folder
 
 4. **Confirm installation**
-   - You'll see the extension icon in the toolbar
-   - Click the icon to open the popup
+   - | toolbar,
+     - you see the extension icon
 
 ### Firefox
 
@@ -39,29 +48,39 @@ A cross-browser extension (Chrome & Firefox) to audit accessibility issues withi
    cd accessibility-checker
    ```
 
-2. **Load temporarily for testing**
+2. ways
+   * **temporarily**
+     * use cases
+       * testing
+     * | browser, 
+       * about:debugging#/runtime/this-firefox
+         * "Load Temporary Add-on" > [manifest.json](manifest.json)
 
-   - Navigate to `about:debugging#/runtime/this-firefox`
-   - Click "Load Temporary Add-on"
-   - Select the `manifest.json` file
+   * **permanently**
+     * | this repo,
+       * `npm install` && `npm run firefox:build`
+         * generate a .xpi file / ⚠️[zipped](https://wiki.mozilla.org/WebExtensions) ⚠️
+     * | browser,
+       * about:addons 
+         * "Install addon from file" > [dist/accessibility_checker-1.8.5.zip](dist/accessibility_checker-1.8.5.zip)
+           * Problems:
+             * Problem1: require to be sing in [Firefox](https://support.mozilla.org/en-US/kb/add-on-signing-in-firefox?as=u&utm_source=inproduct)
+               * Solution: TODO: 
 
-3. **Or install permanently** (requires signing)
+## How to check that it works?
 
-   ```bash
-   npm install
-   npm run firefox:build
-   ```
-
-   Then submit the generated `.xpi` file to Firefox Add-ons.
-
-📖 **For detailed Firefox instructions**, see [FIREFOX_COMPATIBILITY.md](FIREFOX_COMPATIBILITY.md)
-
----
+* | any browser,
+  * https://example.com,
+    * open up the extension
+  * | extension, 
+    * set selector: body
+    * click run analysis
 
 ## 📖 How to Use
 
 ### Basic Analysis (Single Page)
 
+TODO: 
 1. **Open the popup** by clicking the extension icon
 
 2. **Configure target container**
@@ -151,6 +170,14 @@ If you want to manually analyze the current page:
 3. The flow is saved and UI returns to normal mode
 
 ---
+
+### NOT valid | ALL pages
+
+* _Examples:_
+  * | Firefox,
+    * about:\*
+    * addons.mozilla.org
+* Reason: 🧠some pages are blocked -- by -- browsers🧠
 
 ## 📊 Report System
 
@@ -483,12 +510,6 @@ The extension uses `chrome.storage.local` to store:
   - Go to Chrome Settings → Privacy and security → Site settings
   - Notifications → Find the extension
   - Ensure it's set to "Allow"
-
----
-
-## 📄 License
-
-This project is open source. You can use, modify, and distribute it freely.
 
 ---
 
