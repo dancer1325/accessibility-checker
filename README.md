@@ -54,7 +54,7 @@ A cross-browser extension (Chrome & Firefox) to audit accessibility issues withi
 
    Then submit the generated `.xpi` file to Firefox Add-ons.
 
-📖 **For detailed Firefox instructions**, see [FIREFOX_COMPATIBILITY.md](FIREFOX_COMPATIBILITY.md)
+📖 **For detailed Firefox instructions**, see [QUICK_START_FIREFOX.md](QUICK_START_FIREFOX.md)
 
 ---
 
