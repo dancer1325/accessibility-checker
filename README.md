@@ -1,12 +1,17 @@
 # Accessibility Checker - Chrome Extension v1.7.0
 
-A Chrome extension to audit accessibility issues within specific page containers, with support for multi-page flows, 16 WCAG 2.1 Level AA checks, and **full container screenshots** with scrollable modal view.
+* == Chrome extension
+  * allows
+    * | specific page containers,
+      * audit accessibility issues 
+    * multi-page flow analysis
+    * FULL container screenshots (scrollable modal view)
+  * follows
+    * [WCAG 2.1 Level AA](https://www.w3.org/WAI/WCAG21/quickref/)'s 16 checks
 
----
+## how to install?
 
-## 🚀 Installation
-
-### From Source Code
+### -- From -- Source Code
 
 1. **Download or clone this repository**
 
@@ -15,59 +20,57 @@ A Chrome extension to audit accessibility issues within specific page containers
    cd accessibility-checker
    ```
 
-2. **Open Chrome Extensions page**
-
-   - Navigate to `chrome://extensions/`
-   - Enable "Developer mode" (top right corner)
+2. | browser, 
+   * "chrome://extensions/"
+     * enable "Developer mode" (top right corner)
 
 3. **Load the extension**
-
-   - Click "Load unpacked"
-   - Select the `accessibility-checker` folder
+   * Click "Load unpacked" > Select the "accessibility-checker" folder
 
 4. **Confirm installation**
    - You'll see the extension icon in the toolbar
    - Click the icon to open the popup
 
----
-
 ## 📖 How to Use
 
 ### Basic Analysis (Single Page)
 
-1. **Open the popup** by clicking the extension icon
-
+1. click the extension icon
 2. **Configure target container**
-
-   - In "Target Div Class", enter the class of the container you want to audit
-   - Example: `main-content`, `app-container`, `content-wrapper`
-   - You can also use HTML tags: `main`, `article`, `section`
-
+   - | "Target Div Class", 
+     - set the 
+       - container's class / you want to audit
+         - Example: `main-content`, `app-container`, `content-wrapper`, OR
+       - HTML tags
+         - Example: `main`, `article`, `section`
 3. **Select checks**
 
-   - **Basic Checks** (enabled by default):
+   - **Basic Checks**:
 
-     - ✅ **Text Size** - Minimum font size 14px
-     - ✅ **Clickable Icons** - Minimum clickable elements 24x24px
-     - ✅ **Color Contrast** - Text-background contrast (WCAG AA)
-     - ✅ **Border Contrast** - Border contrast 3:1
-     - ✅ **ARIA Labels** - Accessibility labels
-     - ⬜ **Empty Elements** - Empty clickable elements (0x0px)
+     | Check               | Description                           | Default |
+     |---------------------|---------------------------------------|---------|
+     | **Text Size**       | \>= 14px                              | ✅       |
+     | **Clickable Icons** | \>= 24x24px                           | ✅       |
+     | **Color Contrast**  | == Text-background contrast (WCAG AA) | ✅       |
+     | **Border Contrast** | 3:1                                   | ✅       |
+     | **ARIA Labels**     | == Accessibility labels               | ✅       |
+     | **Empty Elements**  | == Empty clickable elements (0x0px)   | ⬜       |
 
-   - **Advanced Checks** (disabled by default - click to expand):
-     - 🔴 **High Priority**:
-       - ⬜ **Focus Visible** - Focus indicators for keyboard navigation
-       - ⬜ **Tab Order** - Tabindex issues
-       - ⬜ **Alt Text** - Alternative text for images/icons
-     - 🟡 **Medium Priority**:
-       - ⬜ **Form Labels** - Form labels
-       - ⬜ **Headings Structure** - h1-h6 hierarchy
-       - ⬜ **Keyboard Traps** - Keyboard traps
-       - ⬜ **Hidden Content** - aria-hidden conflicts
-     - 🟢 **Low Priority**:
-       - ⬜ **Color Dependence** - Color-only information
-       - ⬜ **Language Attributes** - lang attributes
-       - ⬜ **Link Text** - Descriptive links
+   - **Advanced Checks**
+     - ⚠️by default, disabled⚠️
+
+       | Check                   | Description                               | Priority |
+       |-------------------------|-------------------------------------------|----------|
+       | **Focus Visible**       | \| keyboard navigation, focus indicators  | 🔴       |
+       | **Tab Order**           | Tabindex issues                           | 🔴       |
+       | **Alt Text**            | == ALTERNATIVE text -- to -- images/icons | 🔴       |
+       | **Form Labels**         | Form labels                               | 🟡       |
+       | **Headings Structure**  | h1-h6 hierarchy                           | 🟡       |
+       | **Keyboard Traps**      | Keyboard traps                            | 🟡       |
+       | **Hidden Content**      | aria-hidden conflicts                     | 🟡       |
+       | **Color Dependence**    | Color-only information                    | 🟢       |
+       | **Language Attributes** | lang attributes                           | 🟢       |
+       | **Link Text**           | Descriptive links                         | 🟢       |
 
 4. **Run the analysis**
 
@@ -81,11 +84,11 @@ A Chrome extension to audit accessibility issues within specific page containers
    - **Hover**: Labels are semi-transparent (92% opacity)
    - **Auto-positioning**: Labels stack to avoid overlapping
 
----
-
 ### Multi-Page Flow Analysis
 
-Ideal for auditing complete user journeys (e.g., checkout process, registration, onboarding).
+* use cases
+  * complete user journeys
+    * _Examples:_ checkout process, registration, onboarding
 
 #### Step 1: Start a Flow
 
@@ -354,14 +357,6 @@ If you find an issue:
    - Console logs
    - Example URL (if possible)
 
-### Suggest Improvements
-
-Have ideas for new checks or improvements?
-
-1. Open an issue describing your proposal
-2. Include use cases
-3. Reference WCAG criteria if applicable
-
 ### Local Development
 
 ```bash
@@ -456,12 +451,6 @@ The extension uses `chrome.storage.local` to store:
   - Go to Chrome Settings → Privacy and security → Site settings
   - Notifications → Find the extension
   - Ensure it's set to "Allow"
-
----
-
-## 📄 License
-
-This project is open source. You can use, modify, and distribute it freely.
 
 ---
 
