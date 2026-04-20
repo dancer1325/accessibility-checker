@@ -1,18 +1,54 @@
 document.addEventListener('DOMContentLoaded', function () {
   const divClassInput = document.getElementById('divClass');
+
+  // Analyze container & state
+  const analyzeContainer = document.getElementById('analyzeContainer');
   const runAnalysisBtn = document.getElementById('runAnalysis');
+  const startFlowBtn = document.getElementById('startFlow');
+  const analyzePageBtn = document.getElementById('analyzePage');
+  const finishFlowBtn = document.getElementById('finishFlow');
+  const flowNameField = document.getElementById('flowNameField');
+  const flowNameDisplay = document.getElementById('flowName');
+  const confirmFlowBtn = document.getElementById('confirmFlow');
   const statusDiv = document.getElementById('status');
 
-  // Flow controls
-  const startFlowBtn = document.getElementById('startFlow');
-  const addPageToFlowBtn = document.getElementById('addPageToFlow');
-  const finishFlowBtn = document.getElementById('finishFlow');
-  const flowStatusDiv = document.getElementById('flowStatus');
+  function setAnalyzeState(state) {
+    analyzeContainer.dataset.state = state;
+  }
 
-  // Advanced checks toggle
-  const toggleAdvancedBtn = document.getElementById('toggleAdvanced');
-  const advancedOptionsDiv = document.getElementById('advancedOptions');
-  const toggleIcon = toggleAdvancedBtn.querySelector('.toggle-icon');
+  // Tab switching
+  const tabs = document.querySelectorAll('.tab');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  function activateTab(tab) {
+    tabs.forEach(function (t) {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
+    tabPanels.forEach(function (p) {
+      p.classList.remove('active');
+    });
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+    const panel = document.getElementById(tab.getAttribute('aria-controls'));
+    if (panel) panel.classList.add('active');
+    // Remember last active tab
+    chrome.storage.local.set({ lastActiveTab: tab.getAttribute('aria-controls') });
+  }
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      activateTab(tab);
+    });
+  });
+
+  // Restore last active tab
+  chrome.storage.local.get(['lastActiveTab'], function (result) {
+    if (result.lastActiveTab) {
+      const savedTab = document.querySelector('.tab[aria-controls="' + result.lastActiveTab + '"]');
+      if (savedTab) activateTab(savedTab);
+    }
+  });
 
   let isFlowActive = false;
   let currentFlowName = '';
@@ -36,13 +72,6 @@ document.addEventListener('DOMContentLoaded', function () {
     language: document.getElementById('checkLanguage'),
     linkText: document.getElementById('checkLinkText'),
   };
-
-  // Toggle advanced options
-  toggleAdvancedBtn.addEventListener('click', function () {
-    const isExpanded = advancedOptionsDiv.style.display !== 'none';
-    advancedOptionsDiv.style.display = isExpanded ? 'none' : 'block';
-    toggleIcon.classList.toggle('expanded');
-  });
 
   // Load saved state
   chrome.storage.local.get(['divClass', 'options'], function (result) {
@@ -78,25 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Save state on change
   function saveState() {
-    const options = {
-      fontSize: checkboxes.fontSize.checked,
-      iconSize: checkboxes.iconSize.checked,
-      contrast: checkboxes.contrast.checked,
-      borderContrast: checkboxes.borderContrast.checked,
-      ariaLabel: checkboxes.ariaLabel.checked,
-      emptyElements: checkboxes.emptyElements.checked,
-      // Advanced checks
-      focusVisible: checkboxes.focusVisible.checked,
-      tabOrder: checkboxes.tabOrder.checked,
-      altText: checkboxes.altText.checked,
-      formLabels: checkboxes.formLabels.checked,
-      headings: checkboxes.headings.checked,
-      keyboardTraps: checkboxes.keyboardTraps.checked,
-      hiddenContent: checkboxes.hiddenContent.checked,
-      colorDependence: checkboxes.colorDependence.checked,
-      language: checkboxes.language.checked,
-      linkText: checkboxes.linkText.checked,
-    };
+    const options = getSelectedOptions();
 
     const dataToSave = {
       divClass: divClassInput.value,
@@ -121,23 +132,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // Save state before popup closes
   window.addEventListener('beforeunload', saveState);
 
-  // Run analysis
-  runAnalysisBtn.addEventListener('click', async function () {
-    const divClass = divClassInput.value.trim();
-
-    if (!divClass) {
-      showStatus('Please enter a div class name', 'error');
-      return;
-    }
-
-    const options = {
+  // Helper: build options object from checkboxes (avoids duplication)
+  function getSelectedOptions() {
+    return {
       fontSize: checkboxes.fontSize.checked,
       iconSize: checkboxes.iconSize.checked,
       contrast: checkboxes.contrast.checked,
       borderContrast: checkboxes.borderContrast.checked,
       ariaLabel: checkboxes.ariaLabel.checked,
       emptyElements: checkboxes.emptyElements.checked,
-      // Advanced checks
       focusVisible: checkboxes.focusVisible.checked,
       tabOrder: checkboxes.tabOrder.checked,
       altText: checkboxes.altText.checked,
@@ -149,14 +152,27 @@ document.addEventListener('DOMContentLoaded', function () {
       language: checkboxes.language.checked,
       linkText: checkboxes.linkText.checked,
     };
+  }
 
-    // Check if at least one option is selected
+  // Shared analysis logic
+  async function runAnalysis() {
+    const divClass = divClassInput.value.trim();
+
+    if (!divClass) {
+      showStatus('Please enter a div class name', 'error');
+      return;
+    }
+
+    const options = getSelectedOptions();
+
     if (!Object.values(options).some((v) => v)) {
       showStatus('Please enable at least one audit option', 'error');
       return;
     }
 
-    runAnalysisBtn.disabled = true;
+    // Disable whichever button triggered this
+    const triggerBtn = isFlowActive ? analyzePageBtn : runAnalysisBtn;
+    triggerBtn.disabled = true;
     showStatus('Running analysis...', 'info');
 
     try {
@@ -167,96 +183,90 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Inject scripts dynamically into the current tab
       try {
-        // Inject CSS first
         await chrome.scripting.insertCSS({
           target: { tabId: tab.id },
           files: ['styles/content.css'],
         });
-
-        // Inject JavaScript files (polyfill first for Firefox compatibility)
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           files: ['src/browser-polyfill.js', 'src/report.js', 'src/content.js'],
         });
       } catch (injectionError) {
-        console.log(
-          'Scripts may already be injected, continuing...',
-          injectionError
-        );
+        console.log('Scripts may already be injected, continuing...', injectionError);
       }
 
-      // Small delay to ensure scripts are loaded
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Clear previous analysis status
       chrome.storage.local.set({ analysisStatus: 'idle', analysisProgress: 0 });
 
-      // Start monitoring analysis progress
       const progressInterval = setInterval(() => {
-        chrome.storage.local.get(
-          ['analysisProgress', 'analysisStatus'],
-          (data) => {
-            if (data.analysisProgress) {
-              showStatus(
-                `Running analysis... ${data.analysisProgress}%`,
-                'info'
-              );
-            }
-
-            if (
-              data.analysisStatus === 'completed' ||
-              data.analysisStatus === 'failed'
-            ) {
-              clearInterval(progressInterval);
-            }
+        chrome.storage.local.get(['analysisProgress', 'analysisStatus'], (data) => {
+          if (data.analysisProgress) {
+            showStatus(`Running analysis... ${data.analysisProgress}%`, 'info');
           }
-        );
+          if (data.analysisStatus === 'completed' || data.analysisStatus === 'failed') {
+            clearInterval(progressInterval);
+          }
+        });
       }, 500);
 
-      // Send message to start analysis
-      chrome.tabs.sendMessage(
-        tab.id,
-        {
-          action: 'runAudit',
-          divClass: divClass,
-          options: options,
-        },
-        function (response) {
-          clearInterval(progressInterval);
-          runAnalysisBtn.disabled = false;
+      const message = {
+        action: 'runAudit',
+        divClass: divClass,
+        options: options,
+      };
+      if (isFlowActive && currentFlowName) {
+        message.flowName = currentFlowName;
+      }
 
-          if (chrome.runtime.lastError) {
-            // Check if analysis completed anyway via storage
-            chrome.storage.local.get(
-              ['analysisStatus', 'auditReport'],
-              (data) => {
-                if (data.analysisStatus === 'completed' && data.auditReport) {
-                  showStatus('Analysis complete! Check the report.', 'success');
-                } else {
-                  showStatus(
-                    'Analysis may still be running. Please wait...',
-                    'info'
-                  );
-                }
-              }
-            );
-            return;
-          }
+      chrome.tabs.sendMessage(tab.id, message, function (response) {
+        clearInterval(progressInterval);
+        triggerBtn.disabled = false;
 
-          if (response && response.success) {
-            showStatus(
-              `Analysis complete! Found ${response.errorCount} issue(s)`,
-              'success'
-            );
-          } else if (response && response.error) {
-            showStatus(response.error, 'error');
-          }
+        if (chrome.runtime.lastError) {
+          chrome.storage.local.get(['analysisStatus', 'auditReport'], (data) => {
+            if (data.analysisStatus === 'completed' && data.auditReport) {
+              showStatus('Analysis complete! Check the report.', 'success');
+            } else {
+              showStatus('Analysis may still be running. Please wait...', 'info');
+            }
+          });
+          return;
         }
-      );
+
+        if (response && response.success) {
+          showStatus(`Analysis complete! Found ${response.errorCount} issue(s)`, 'success');
+
+          if (isFlowActive && currentFlowName) {
+            updateFlowPageCount();
+          }
+        } else if (response && response.error) {
+          showStatus(response.error, 'error');
+        }
+      });
     } catch (error) {
-      runAnalysisBtn.disabled = false;
+      triggerBtn.disabled = false;
       showStatus('Error: ' + error.message, 'error');
     }
+  }
+
+  function updateFlowPageCount() {
+    chrome.storage.local.get(['auditReport'], function (data) {
+      const report = data.auditReport || {};
+      const flowPages = report[currentFlowName] || {};
+      const pageCount = Object.keys(flowPages).length;
+      flowNameDisplay.textContent = `${currentFlowName} — ${pageCount} page(s)`;
+    });
+  }
+
+  // Standalone analysis (no flow)
+  runAnalysisBtn.addEventListener('click', function () {
+    runAnalysis();
+  });
+
+  // Flow: analyze page
+  analyzePageBtn.addEventListener('click', function () {
+    runAnalysis();
   });
 
   function showStatus(message, type) {
@@ -272,190 +282,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ===== FLOW MANAGEMENT =====
 
-  // Function to analyze current page (reusable)
-  async function analyzeCurrentPage() {
-    if (!isFlowActive) {
-      showStatus('No active flow. Start a flow first.', 'error');
-      return;
-    }
+  startFlowBtn.addEventListener('click', function () {
+    flowNameField.value = 'Flow ' + new Date().toLocaleString();
+    setAnalyzeState('naming');
+    flowNameField.focus();
+    flowNameField.select();
+  });
 
-    const divClass = divClassInput.value.trim();
-
-    if (!divClass) {
-      showStatus('Please enter a div class name', 'error');
-      return;
-    }
-
-    const options = {
-      fontSize: checkboxes.fontSize.checked,
-      iconSize: checkboxes.iconSize.checked,
-      contrast: checkboxes.contrast.checked,
-      borderContrast: checkboxes.borderContrast.checked,
-      ariaLabel: checkboxes.ariaLabel.checked,
-      emptyElements: checkboxes.emptyElements.checked,
-      // Advanced checks
-      focusVisible: checkboxes.focusVisible.checked,
-      tabOrder: checkboxes.tabOrder.checked,
-      altText: checkboxes.altText.checked,
-      formLabels: checkboxes.formLabels.checked,
-      headings: checkboxes.headings.checked,
-      keyboardTraps: checkboxes.keyboardTraps.checked,
-      hiddenContent: checkboxes.hiddenContent.checked,
-      colorDependence: checkboxes.colorDependence.checked,
-      language: checkboxes.language.checked,
-      linkText: checkboxes.linkText.checked,
-    };
-
-    if (!Object.values(options).some((v) => v)) {
-      showStatus('Please enable at least one audit option', 'error');
-      return;
-    }
-
-    addPageToFlowBtn.disabled = true;
-    showStatus('Analyzing page and adding to flow...', 'info');
-
-    try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      // Inject scripts dynamically
-      try {
-        await chrome.scripting.insertCSS({
-          target: { tabId: tab.id },
-          files: ['styles/content.css'],
-        });
-
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['src/browser-polyfill.js', 'src/report.js', 'src/content.js'],
-        });
-      } catch (injectionError) {
-        console.log(
-          'Scripts may already be injected, continuing...',
-          injectionError
-        );
-      }
-
-      // Small delay to ensure scripts are loaded
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Clear previous analysis status
-      chrome.storage.local.set({ analysisStatus: 'idle', analysisProgress: 0 });
-
-      // Start monitoring analysis progress
-      const progressInterval = setInterval(() => {
-        chrome.storage.local.get(
-          ['analysisProgress', 'analysisStatus'],
-          (data) => {
-            if (data.analysisProgress) {
-              showStatus(`Analyzing page... ${data.analysisProgress}%`, 'info');
-            }
-
-            if (
-              data.analysisStatus === 'completed' ||
-              data.analysisStatus === 'failed'
-            ) {
-              clearInterval(progressInterval);
-            }
-          }
-        );
-      }, 500);
-
-      chrome.tabs.sendMessage(
-        tab.id,
-        {
-          action: 'runAudit',
-          divClass: divClass,
-          options: options,
-          flowName: currentFlowName,
-        },
-        function (response) {
-          clearInterval(progressInterval);
-          addPageToFlowBtn.disabled = false;
-
-          if (chrome.runtime.lastError) {
-            // Check if analysis completed anyway via storage
-            chrome.storage.local.get(
-              ['analysisStatus', 'auditReport'],
-              (data) => {
-                if (data.analysisStatus === 'completed' && data.auditReport) {
-                  showStatus('Page analyzed! Check the report.', 'success');
-                } else {
-                  showStatus(
-                    'Analysis may still be running. Please wait...',
-                    'info'
-                  );
-                }
-              }
-            );
-            return;
-          }
-
-          if (response && response.success) {
-            showStatus(
-              `Page analyzed! Found ${response.errorCount} issue(s)`,
-              'success'
-            );
-
-            // Update flow status
-            chrome.storage.local.get(['auditReport'], function (data) {
-              const report = data.auditReport || {};
-              const flowPages = report[currentFlowName] || {};
-              const pageCount = Object.keys(flowPages).length;
-
-              flowStatusDiv.textContent = `🎬 Flow: "${currentFlowName}" - ${pageCount} page(s) analyzed`;
-            });
-          } else if (response && response.error) {
-            showStatus(response.error, 'error');
-          }
-        }
-      );
-    } catch (error) {
-      addPageToFlowBtn.disabled = false;
-      showStatus('Error: ' + error.message, 'error');
-    }
-  }
-
-  // Start a new flow
-  startFlowBtn.addEventListener('click', async function () {
-    const flowName = prompt(
-      'Enter a name for this flow:',
-      'Flow ' + new Date().toLocaleString()
-    );
-
-    if (!flowName || !flowName.trim()) {
+  function confirmFlowStart() {
+    const flowName = flowNameField.value.trim();
+    if (!flowName) {
       showStatus('Flow name cannot be empty', 'error');
       return;
     }
 
-    currentFlowName = flowName.trim();
+    currentFlowName = flowName;
     isFlowActive = true;
 
-    // Get current config
     const divClass = divClassInput.value.trim();
-    const options = {
-      fontSize: checkboxes.fontSize.checked,
-      iconSize: checkboxes.iconSize.checked,
-      contrast: checkboxes.contrast.checked,
-      borderContrast: checkboxes.borderContrast.checked,
-      ariaLabel: checkboxes.ariaLabel.checked,
-      emptyElements: checkboxes.emptyElements.checked,
-      // Advanced checks
-      focusVisible: checkboxes.focusVisible.checked,
-      tabOrder: checkboxes.tabOrder.checked,
-      altText: checkboxes.altText.checked,
-      formLabels: checkboxes.formLabels.checked,
-      headings: checkboxes.headings.checked,
-      keyboardTraps: checkboxes.keyboardTraps.checked,
-      hiddenContent: checkboxes.hiddenContent.checked,
-      colorDependence: checkboxes.colorDependence.checked,
-      language: checkboxes.language.checked,
-      linkText: checkboxes.linkText.checked,
-    };
+    const options = getSelectedOptions();
 
-    // Save flow state + config for background service worker
     chrome.storage.local.set({
       activeFlow: currentFlowName,
       isFlowActive: true,
@@ -463,40 +309,30 @@ document.addEventListener('DOMContentLoaded', function () {
       options: options,
     });
 
-    // Notify background service worker
     chrome.runtime.sendMessage({
       action: 'flowStarted',
       flowName: currentFlowName,
     });
 
-    // Update UI
-    startFlowBtn.style.display = 'none';
-    addPageToFlowBtn.style.display = 'block';
-    finishFlowBtn.style.display = 'block';
-    runAnalysisBtn.disabled = true;
+    setAnalyzeState('active');
+    flowNameDisplay.textContent = `${currentFlowName} — 0 page(s)`;
+    showStatus(`Flow "${currentFlowName}" started!`, 'success');
+  }
 
-    flowStatusDiv.style.display = 'block';
-    flowStatusDiv.textContent = `🎬 Flow active: "${currentFlowName}" - Analyzing first page...`;
-
-    showStatus(
-      `Flow "${currentFlowName}" started! Analyzing current page...`,
-      'info'
-    );
-
-    // Automatically analyze the first page
-    await analyzeCurrentPage();
+  confirmFlowBtn.addEventListener('click', function () {
+    confirmFlowStart();
   });
 
-  // Add current page to flow
-  addPageToFlowBtn.addEventListener('click', async function () {
-    await analyzeCurrentPage();
-  });
-
-  // Finish flow
-  finishFlowBtn.addEventListener('click', function () {
-    if (!isFlowActive) {
-      return;
+  flowNameField.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      confirmFlowStart();
+    } else if (e.key === 'Escape') {
+      setAnalyzeState('idle');
     }
+  });
+
+  finishFlowBtn.addEventListener('click', function () {
+    if (!isFlowActive) return;
 
     chrome.storage.local.get(['auditReport'], function (data) {
       const report = data.auditReport || {};
@@ -504,11 +340,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const pageCount = Object.keys(flowPages).length;
 
       if (pageCount === 0) {
-        if (
-          !confirm(
-            'This flow has no pages analyzed. Do you want to finish it anyway?'
-          )
-        ) {
+        if (!confirm('This flow has no pages analyzed. Finish it anyway?')) {
           return;
         }
       }
@@ -516,28 +348,11 @@ document.addEventListener('DOMContentLoaded', function () {
       isFlowActive = false;
       currentFlowName = '';
 
-      // Clear flow state
-      chrome.storage.local.set({
-        activeFlow: null,
-        isFlowActive: false,
-      });
+      chrome.storage.local.set({ activeFlow: null, isFlowActive: false });
+      chrome.runtime.sendMessage({ action: 'flowFinished' });
 
-      // Notify background service worker
-      chrome.runtime.sendMessage({
-        action: 'flowFinished',
-      });
-
-      // Update UI
-      startFlowBtn.style.display = 'block';
-      addPageToFlowBtn.style.display = 'none';
-      finishFlowBtn.style.display = 'none';
-      runAnalysisBtn.disabled = false;
-
-      flowStatusDiv.style.display = 'none';
-
+      setAnalyzeState('idle');
       showStatus(`Flow finished with ${pageCount} page(s)`, 'success');
-
-      // Refresh report summary
       setTimeout(() => loadReportSummary(), 500);
     });
   });
@@ -547,25 +362,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (result.isFlowActive && result.activeFlow) {
       currentFlowName = result.activeFlow;
       isFlowActive = true;
-
-      startFlowBtn.style.display = 'none';
-      addPageToFlowBtn.style.display = 'block';
-      finishFlowBtn.style.display = 'block';
-      runAnalysisBtn.disabled = true;
-
-      chrome.storage.local.get(['auditReport'], function (data) {
-        const report = data.auditReport || {};
-        const flowPages = report[currentFlowName] || {};
-        const pageCount = Object.keys(flowPages).length;
-
-        flowStatusDiv.style.display = 'block';
-        flowStatusDiv.textContent = `🎬 Flow: "${currentFlowName}" - ${pageCount} page(s) analyzed`;
-      });
+      setAnalyzeState('active');
+      updateFlowPageCount();
     }
   });
 
   // ===== REPORT MANAGEMENT =====
   const reportSummary = document.getElementById('reportSummary');
+  const reportActionsDiv = document.getElementById('reportActions');
   const reportTable = document.getElementById('reportTable');
   const reportTableBody = document.getElementById('reportTableBody');
   const downloadReportBtn = document.getElementById('downloadReport');
@@ -673,27 +477,33 @@ document.addEventListener('DOMContentLoaded', function () {
       });
 
       if (flowCount === 0) {
-        reportSummary.innerHTML =
-          '<p class="summary-text">No errors collected yet. Run analysis to start.</p>';
+        reportSummary.textContent = '';
+        const p = document.createElement('p');
+        p.className = 'summary-text';
+        p.textContent = 'No errors collected yet. Run analysis to start.';
+        reportSummary.appendChild(p);
+        reportActionsDiv.style.display = 'none';
         reportTable.style.display = 'none';
       } else {
-        reportSummary.innerHTML = `
-          <div class="summary-stats">
-            <div class="stat-item">
-              <span class="stat-label">Flows:</span>
-              <span class="stat-value">${flowCount}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Pages:</span>
-              <span class="stat-value">${totalPages}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Total Errors:</span>
-              <span class="stat-value">${totalErrors}</span>
-            </div>
-          </div>
-        `;
+        reportSummary.textContent = '';
+        const statsDiv = document.createElement('div');
+        statsDiv.className = 'summary-stats';
+        [['Flows', flowCount], ['Pages', totalPages], ['Total Errors', totalErrors]].forEach(([label, value]) => {
+          const item = document.createElement('div');
+          item.className = 'stat-item';
+          const spanLabel = document.createElement('span');
+          spanLabel.className = 'stat-label';
+          spanLabel.textContent = label + ':';
+          const spanValue = document.createElement('span');
+          spanValue.className = 'stat-value';
+          spanValue.textContent = value;
+          item.appendChild(spanLabel);
+          item.appendChild(spanValue);
+          statsDiv.appendChild(item);
+        });
+        reportSummary.appendChild(statsDiv);
         // Always show details when there's data
+        reportActionsDiv.style.display = 'flex';
         loadReportTable();
         reportTable.style.display = 'block';
       }
@@ -704,21 +514,24 @@ document.addEventListener('DOMContentLoaded', function () {
     chrome.storage.local.get(['auditReport'], function (data) {
       const report = data.auditReport || {};
 
-      reportTableBody.innerHTML = '';
+      reportTableBody.textContent = '';
 
       Object.entries(report).forEach(([flowName, pages]) => {
         Object.entries(pages).forEach(([pageName, pageData]) => {
-          // Handle both old format (array) and new format (object with errors array)
           const errors = Array.isArray(pageData)
             ? pageData
             : pageData.errors || [];
 
           const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${flowName}</td>
-            <td>${pageName}</td>
-            <td>${errors.length}</td>
-          `;
+          const tdFlow = document.createElement('td');
+          tdFlow.textContent = flowName;
+          const tdPage = document.createElement('td');
+          tdPage.textContent = pageName;
+          const tdErrors = document.createElement('td');
+          tdErrors.textContent = errors.length;
+          row.appendChild(tdFlow);
+          row.appendChild(tdPage);
+          row.appendChild(tdErrors);
           reportTableBody.appendChild(row);
         });
       });
@@ -726,6 +539,15 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function generateExcelFile(report) {
+    // Sanitize cell to prevent CSV injection
+    function sanitizeCell(value) {
+      const str = String(value).replace(/"/g, '""');
+      if (/^[=+\-@\t\r]/.test(str)) {
+        return '"\'' + str + '"';
+      }
+      return '"' + str + '"';
+    }
+
     // Generate CSV content with multiple sections (one per flow)
     let csvContent = '\uFEFF'; // UTF-8 BOM for Excel compatibility
 
@@ -733,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Add flow header
       csvContent += `\n=== FLOW: ${flowName} ===\n`;
       csvContent +=
-        'FLOW NAME;PAGE NAME;ERROR CODE;ELEMENT TYPE;ID;TRACK ID;DATA-TEST-ID;CLASS;SIZE;POSITION;TEXT CONTENT;ERROR MESSAGE;SCREENSHOT\n';
+        'FLOW NAME,PAGE NAME,ERROR CODE,ELEMENT TYPE,ID,TRACK ID,DATA-TEST-ID,CLASS,SIZE,POSITION,TEXT CONTENT,ERROR MESSAGE,SCREENSHOT\n';
 
       // Sort pages by timestamp (chronological order)
       const sortedPages = Object.entries(pages).sort((a, b) => {
@@ -774,8 +596,8 @@ document.addEventListener('DOMContentLoaded', function () {
             error.message,
             screenshotInfo,
           ]
-            .map((cell) => `"${String(cell).replace(/"/g, '""')}"`) // Escape quotes
-            .join(';');
+            .map((cell) => sanitizeCell(cell))
+            .join(',');
 
           csvContent += row + '\n';
         });
@@ -1814,7 +1636,7 @@ document.addEventListener('DOMContentLoaded', function () {
     htmlContent += `
         <div class="footer">
             <p>by @soyJairoCosta</p>
-            <p>Accessibility Checker v1.6.1</p>
+            <p>Accessibility Checker v1.8.5</p>
         </div>
     </div>
 
