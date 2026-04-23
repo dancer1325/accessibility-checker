@@ -56,8 +56,11 @@ A cross-browser extension (Chrome & Firefox) to audit accessibility issues withi
 
 4. **Install permanently** (requires signing)
 
+
+📖 **For detailed Firefox instructions**, see [QUICK_START_FIREFOX.md](QUICK_START_FIREFOX.md)
    - Package as ZIP and submit to [addons.mozilla.org](https://addons.mozilla.org)
    - Or use `web-ext sign --api-key=... --api-secret=...`
+
 
 ---
 
