@@ -681,29 +681,6 @@ async function cropAndHighlightParentWithMarker(
 }
 
 /**
- * Old function - kept for fallback but now calls cropAndHighlightElement
- */
-async function addHighlightToScreenshot(
-  screenshotDataUrl,
-  elementX,
-  elementY,
-  elementWidth,
-  elementHeight,
-  tagName
-) {
-  // Redirect to new cropped version
-  return cropAndHighlightElement(
-    screenshotDataUrl,
-    elementX,
-    elementY,
-    elementWidth,
-    elementHeight,
-    tagName,
-    false
-  );
-}
-
-/**
  * Compress and resize image to reduce storage size
  * @param {HTMLCanvasElement} canvas - Canvas with the image
  * @param {function|number} qualityOrCallback - Callback function or quality number (0.0 to 1.0)
@@ -771,266 +748,6 @@ function compressImage(canvas, qualityOrCallback = 0.6, maxWidth = 800) {
     }
     return result;
   }
-}
-
-/**
- * Create a simplified visual representation of container with element highlighted
- */
-async function stitchScreenshotsAndHighlight(
-  screenshots,
-  elementX,
-  elementY,
-  elementWidth,
-  elementHeight,
-  tagName,
-  pageWidth,
-  pageHeight,
-  viewportHeight,
-  dpr
-) {
-  return new Promise((resolve) => {
-    // Create canvas for full page
-    const canvas = document.createElement('canvas');
-    canvas.width = pageWidth * dpr;
-    canvas.height = pageHeight * dpr;
-    const ctx = canvas.getContext('2d');
-
-    // Fill with white background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    let imagesLoaded = 0;
-    const totalImages = screenshots.length;
-
-    // Load and draw each screenshot
-    screenshots.forEach((screenshot) => {
-      const img = new Image();
-
-      img.onload = () => {
-        // Draw screenshot at correct position
-        ctx.drawImage(img, 0, screenshot.scrollY * dpr, img.width, img.height);
-
-        imagesLoaded++;
-
-        // When all images are loaded, add highlight
-        if (imagesLoaded === totalImages) {
-          // Draw red highlight border
-          const highlightX = elementX * dpr;
-          const highlightY = elementY * dpr;
-          const highlightWidth = elementWidth * dpr;
-          const highlightHeight = elementHeight * dpr;
-
-          ctx.strokeStyle = '#e74c3c';
-          ctx.lineWidth = 4 * dpr;
-          ctx.setLineDash([]);
-          ctx.strokeRect(
-            highlightX,
-            highlightY,
-            highlightWidth,
-            highlightHeight
-          );
-
-          // Add label
-          const tagInfo = `<${tagName.toLowerCase()}>`;
-          const labelPadding = 8 * dpr;
-          const labelHeight = 24 * dpr;
-          ctx.font = `bold ${14 * dpr}px Arial`;
-          const labelWidth = ctx.measureText(tagInfo).width + labelPadding * 2;
-
-          ctx.fillStyle = '#e74c3c';
-          ctx.fillRect(
-            highlightX,
-            Math.max(0, highlightY - labelHeight),
-            labelWidth,
-            labelHeight
-          );
-
-          ctx.fillStyle = '#ffffff';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          ctx.fillText(
-            tagInfo,
-            highlightX + labelPadding,
-            Math.max(0, highlightY - labelHeight) + 5 * dpr
-          );
-
-          console.log('Full page screenshot created with highlight');
-          resolve(canvas.toDataURL('image/png'));
-        }
-      };
-
-      img.onerror = () => {
-        console.error('Failed to load screenshot image');
-        imagesLoaded++;
-        if (imagesLoaded === totalImages) {
-          resolve(canvas.toDataURL('image/png'));
-        }
-      };
-
-      img.src = screenshot.dataUrl;
-    });
-  });
-}
-
-/**
- * Draw red highlight border on a container screenshot
- * @param {string} screenshotDataUrl - Base screenshot image of full container
- * @param {number} relativeX - Element X position relative to container
- * @param {number} relativeY - Element Y position relative to container
- * @param {number} elementWidth - Element width
- * @param {number} elementHeight - Element height
- * @param {string} tagName - Element tag name
- * @returns {Promise<string>} Screenshot with red border
- */
-async function drawHighlightOnContainer(
-  screenshotDataUrl,
-  relativeX,
-  relativeY,
-  elementWidth,
-  elementHeight,
-  tagName
-) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      // Use full image size (the complete container)
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      // Draw the full container screenshot
-      ctx.drawImage(img, 0, 0, img.width, img.height);
-
-      // Element position is already relative to container, no DPR needed
-      // since html2canvas renders at scale: 1
-      const highlightX = relativeX;
-      const highlightY = relativeY;
-      const highlightWidth = elementWidth;
-      const highlightHeight = elementHeight;
-
-      // Draw RED HIGHLIGHT BORDER
-      const borderWidth = 4;
-
-      ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = borderWidth;
-      ctx.setLineDash([]);
-
-      ctx.strokeRect(highlightX, highlightY, highlightWidth, highlightHeight);
-
-      // Add tag label
-      const tagInfo = `<${tagName.toLowerCase()}>`;
-      const labelPadding = 8;
-      const labelHeight = 24;
-      ctx.font = 'bold 14px Arial';
-      const labelWidth = ctx.measureText(tagInfo).width + labelPadding * 2;
-
-      ctx.fillStyle = '#e74c3c';
-      ctx.fillRect(
-        highlightX,
-        Math.max(0, highlightY - labelHeight),
-        labelWidth,
-        labelHeight
-      );
-
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText(
-        tagInfo,
-        highlightX + labelPadding,
-        Math.max(0, highlightY - labelHeight) + 5
-      );
-
-      resolve(canvas.toDataURL('image/png'));
-    };
-    img.onerror = () => {
-      console.error('Failed to load container screenshot image');
-      resolve(null);
-    };
-    img.src = screenshotDataUrl;
-  });
-}
-
-/**
- * Draw red highlight border on a screenshot
- * @param {string} screenshotDataUrl - Base screenshot image
- * @param {DOMRect} elementRect - Element bounds
- * @param {DOMRect} containerRect - Container bounds
- * @param {string} tagName - Element tag name
- * @returns {Promise<string>} Screenshot with red border
- */
-async function drawHighlightOnScreenshot(
-  screenshotDataUrl,
-  elementRect,
-  containerRect,
-  tagName
-) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      // The screenshot is at device pixel ratio scale
-      // We need to use the full image size without additional scaling
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      // Draw the captured screenshot at full size
-      ctx.drawImage(img, 0, 0, img.width, img.height);
-
-      // Calculate scale factor based on device pixel ratio
-      const dpr = window.devicePixelRatio || 1;
-
-      // Element position with device pixel ratio
-      const relativeX = elementRect.left * dpr;
-      const relativeY = elementRect.top * dpr;
-      const elementWidth = elementRect.width * dpr;
-      const elementHeight = elementRect.height * dpr;
-
-      // Draw RED HIGHLIGHT BORDER (no offset - exact position)
-      const borderWidth = 4 * dpr;
-
-      ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = borderWidth;
-      ctx.setLineDash([]);
-
-      ctx.strokeRect(relativeX, relativeY, elementWidth, elementHeight);
-
-      // Add tag label
-      const tagInfo = `<${tagName.toLowerCase()}>`;
-      const labelPadding = 8 * dpr;
-      const labelHeight = 24 * dpr;
-      ctx.font = `bold ${14 * dpr}px Arial`;
-      const labelWidth = ctx.measureText(tagInfo).width + labelPadding * 2;
-
-      ctx.fillStyle = '#e74c3c';
-      ctx.fillRect(
-        relativeX,
-        Math.max(0, relativeY - labelHeight),
-        labelWidth,
-        labelHeight
-      );
-
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText(
-        tagInfo,
-        relativeX + labelPadding,
-        Math.max(0, relativeY - labelHeight) + 5 * dpr
-      );
-
-      resolve(canvas.toDataURL('image/png'));
-    };
-    img.onerror = () => {
-      console.error('Failed to load screenshot image');
-      resolve(null);
-    };
-    img.src = screenshotDataUrl;
-  });
 }
 
 /**
@@ -1207,11 +924,17 @@ async function createSimplifiedScreenshot(
   return canvas.toDataURL('image/png');
 }
 
+// Track event listener cleanup functions for memory leak prevention
+const _a11yCleanupFunctions = [];
+
 function clearHighlights() {
-  // Remove all existing error highlights
   // Remove all existing error highlights
   const existingHighlights = document.querySelectorAll('.a11y-error-highlight');
   existingHighlights.forEach((el) => el.remove());
+
+  // Remove event listeners
+  _a11yCleanupFunctions.forEach((cleanup) => cleanup());
+  _a11yCleanupFunctions.length = 0;
 
   // Remove error classes from elements
   const highlightedElements = document.querySelectorAll('.a11y-has-error');
@@ -1237,8 +960,7 @@ function highlightAuditContainer(container) {
   // Add visual highlight to the container being audited
   container.classList.add('a11y-audit-container');
 
-  // Apply subtle but visible styling
-  container.style.background = 'rgba(250, 253, 238, 0.5)'; // Light yellow-green with transparency
+  // Apply subtle but visible styling (border only, no background change)
   container.style.border = '3px dashed #4caf50'; // Green dashed border
   container.style.borderRadius = '8px';
   container.style.boxShadow = '0 0 0 4px rgba(76, 175, 80, 0.1)'; // Soft green glow
@@ -1422,9 +1144,8 @@ async function runAccessibilityAudit(divClass, options, flowName = null) {
       );
     }
 
-    // Store compression settings globally for use in screenshot function
-    window._screenshotCompressionQuality = compressionQuality;
-    window._screenshotMaxWidth = maxImageWidth;
+    // Store compression settings in namespaced object to avoid polluting page globals
+    const _a11yScreenshotConfig = { quality: compressionQuality, maxWidth: maxImageWidth };
 
     console.log(
       `Processing ${errorsToCapture.length} screenshots in batches of ${BATCH_SIZE}... (${skippedCount} skipped at position 0,0)`
@@ -1536,6 +1257,10 @@ function checkFontSize(elements, errors) {
     if (!text || element.children.length > 0) return;
 
     const computedStyle = window.getComputedStyle(element);
+
+    // Skip hidden elements — they are invisible and produce false positives
+    if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') return;
+
     const fontSize = parseFloat(computedStyle.fontSize);
 
     if (fontSize < 14) {
@@ -1563,20 +1288,33 @@ function checkIconSize(elements, errors) {
 
     if (!isClickable) return;
 
-    // Find the topmost clickable parent to avoid marking children separately
+    // Find the topmost clickable parent (bounded — stop at block-level containers)
     let targetElement = element;
     let parent = element.parentElement;
+    const MAX_DEPTH = 5;
+    let depth = 0;
 
-    while (parent) {
+    while (parent && depth < MAX_DEPTH) {
+      // Stop at block-level layout containers
+      const parentDisplay = window.getComputedStyle(parent).display;
+      if (parentDisplay === 'block' || parentDisplay === 'flex' || parentDisplay === 'grid') {
+        // Only adopt parent if it’s a semantic clickable element (not just cursor:pointer)
+        if (parent.matches('button, a, [onclick], [role="button"]')) {
+          targetElement = parent;
+        }
+        break;
+      }
+
       const parentIsClickable =
         parent.matches('button, a, [onclick], [role="button"]') ||
         parent.style.cursor === 'pointer' ||
         window.getComputedStyle(parent).cursor === 'pointer';
 
       if (parentIsClickable) {
-        targetElement = parent; // Use the parent as the target
+        targetElement = parent;
       }
       parent = parent.parentElement;
+      depth++;
     }
 
     // Skip if we already checked this clickable parent
@@ -1692,6 +1430,7 @@ function getElementHTML(element, maxLength = 200) {
 
 function checkFocusVisible(elements, errors) {
   let count = 0;
+  const previouslyFocused = document.activeElement;
 
   elements.forEach((element) => {
     const isInteractive = element.matches(
@@ -1700,29 +1439,58 @@ function checkFocusVisible(elements, errors) {
 
     if (!isInteractive) return;
 
-    const style = window.getComputedStyle(element);
-    const outlineStyle = style.outline;
-    const outlineWidth = parseFloat(style.outlineWidth);
+    // Skip hidden elements
+    const normalStyle = window.getComputedStyle(element);
+    if (normalStyle.display === 'none' || normalStyle.visibility === 'hidden') return;
 
-    // Check if outline is explicitly disabled
-    if (
-      outlineStyle === 'none' ||
-      outlineWidth === 0 ||
-      style.outlineColor === 'transparent'
-    ) {
-      // Check if there's an alternative focus indicator (box-shadow, border change, etc.)
-      // This is a simplified check - in reality, focus styles might be applied via :focus
-      const hasShadow = style.boxShadow && style.boxShadow !== 'none';
+    // Save normal state for comparison
+    const normalBoxShadow = normalStyle.boxShadow;
+    const normalBorderColor = normalStyle.borderColor;
 
-      if (!hasShadow) {
+    try {
+      // Suppress side effects by temporarily blocking common event types
+      const suppressEvent = (e) => { e.stopImmediatePropagation(); };
+      const eventsToBlock = ['focus', 'focusin', 'blur', 'focusout'];
+      eventsToBlock.forEach((evt) => element.addEventListener(evt, suppressEvent, { capture: true, once: true }));
+
+      element.focus({ preventScroll: true });
+
+      // Only check if element actually received focus
+      if (document.activeElement !== element) {
+        // Clean up any listeners that didn't fire
+        eventsToBlock.forEach((evt) => element.removeEventListener(evt, suppressEvent, { capture: true }));
+        return;
+      }
+
+      const focusStyle = window.getComputedStyle(element);
+      const focusOutlineStyle = focusStyle.outlineStyle;
+      const focusOutlineWidth = parseFloat(focusStyle.outlineWidth);
+      const focusOutlineColor = focusStyle.outlineColor;
+
+      const hasVisibleOutline = focusOutlineStyle !== 'none' && focusOutlineWidth > 0 && focusOutlineColor !== 'transparent';
+      const hasShadowChange = focusStyle.boxShadow !== normalBoxShadow && focusStyle.boxShadow !== 'none';
+      const hasBorderChange = focusStyle.borderColor !== normalBorderColor;
+
+      if (!hasVisibleOutline && !hasShadowChange && !hasBorderChange) {
         errors.push({
           element: element,
-          message: `Focus indicator disabled: Element has outline:none without alternative focus style`,
+          message: `Focus indicator missing: No visible focus style (outline, box-shadow, or border change)`,
         });
         count++;
       }
+    } catch (e) {
+      // Some elements may throw on focus
+    } finally {
+      try { element.blur(); } catch (e) {}
     }
   });
+
+  // Restore original focus
+  try {
+    if (previouslyFocused && previouslyFocused !== document.body) {
+      previouslyFocused.focus({ preventScroll: true });
+    }
+  } catch (e) {}
 
   return count;
 }
@@ -2056,7 +1824,7 @@ function checkKeyboardTraps(elements, errors) {
   let count = 0;
 
   elements.forEach((element) => {
-    // Check for hidden focusable elements
+    // Check for focusable elements that are off-screen (potential traps)
     const isFocusable = element.matches(
       'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
@@ -2068,13 +1836,8 @@ function checkKeyboardTraps(elements, errors) {
         style.visibility === 'hidden' ||
         element.hasAttribute('hidden');
 
-      if (isHidden) {
-        errors.push({
-          element: element,
-          message: `Keyboard trap: Focusable element is hidden (display:none or visibility:hidden)`,
-        });
-        count++;
-      }
+      // Skip hidden elements — they cannot actually receive focus and are not traps
+      if (isHidden) return;
 
       // Check for elements with very negative position (off-screen)
       const rect = element.getBoundingClientRect();
@@ -2152,12 +1915,8 @@ function checkColorDependence(elements, errors) {
     const color = style.color;
 
     // Check for red text indicating errors without other indicators
-    if (
-      color.includes('rgb(255') ||
-      color.includes('#ff') ||
-      color.includes('#f00') ||
-      color.includes('red')
-    ) {
+    const rgb = parseRGB(color);
+    if (rgb && rgb.r > 200 && rgb.g < 100 && rgb.b < 100) {
       // Check if text mentions error/required/invalid
       if (
         text.includes('error') ||
@@ -2289,15 +2048,20 @@ function checkLinkText(elements, errors) {
 
       // Check for empty links
       if (!effectiveText && !ariaLabelledby) {
-        // Check if link contains only images
-        const hasImage = element.querySelector('img, svg');
-        if (hasImage) {
+        // Check if link contains images
+        const images = element.querySelectorAll('img');
+        const svgs = element.querySelectorAll('svg');
+        const hasImage = images.length > 0 || svgs.length > 0;
+        const allImagesHaveAlt = images.length > 0 && Array.from(images).every(img => img.getAttribute('alt'));
+        const allSvgsHaveLabel = svgs.length > 0 && Array.from(svgs).every(svg => svg.getAttribute('aria-label') || svg.querySelector('title'));
+
+        if (hasImage && !allImagesHaveAlt && !allSvgsHaveLabel) {
           errors.push({
             element: element,
             message: `Empty link text: Link contains only images without alt text or aria-label`,
           });
           count++;
-        } else {
+        } else if (!hasImage) {
           errors.push({
             element: element,
             message: `Empty link: Link has no text content or aria-label`,
@@ -2359,12 +2123,12 @@ function checkBorderContrast(elements, errors) {
 
     if (!backgroundColor || backgroundColor === 'transparent') return;
 
-    // Check border contrast
-    const borderColor = computedStyle.borderColor;
-    if (borderColor && borderColor !== 'rgba(0, 0, 0, 0)') {
-      const borderWidth = parseFloat(computedStyle.borderWidth);
+    // Check border contrast (use per-side color to avoid shorthand issues)
+    const borderTopColor = computedStyle.borderTopColor;
+    if (borderTopColor && borderTopColor !== 'rgba(0, 0, 0, 0)') {
+      const borderWidth = parseFloat(computedStyle.borderTopWidth);
       if (borderWidth > 0) {
-        const borderContrast = getContrastRatio(borderColor, backgroundColor);
+        const borderContrast = getContrastRatio(borderTopColor, backgroundColor);
         if (borderContrast !== null && borderContrast < 3) {
           errors.push({
             element: element,
@@ -2400,21 +2164,13 @@ function checkAriaLabels(elements, errors) {
     const hasTextContent = element.textContent.trim().length > 0;
     const hasAltText = element.hasAttribute('alt');
 
-    // Special case for inputs
+    // Special case for inputs — skip if formLabels check is also enabled to avoid duplicates
     if (
       element.tagName === 'INPUT' ||
       element.tagName === 'SELECT' ||
       element.tagName === 'TEXTAREA'
     ) {
-      const hasAssociatedLabel = element.labels && element.labels.length > 0;
-      if (!hasAriaLabel && !hasAssociatedLabel && !element.placeholder) {
-        errors.push({
-          element: element,
-          message: 'Form element missing accessible label',
-        });
-        count++;
-      }
-      return;
+      return; // Handled by checkFormLabels; placeholder is NOT a valid label per WCAG
     }
 
     // For other interactive elements
@@ -2459,6 +2215,8 @@ function highlightError(element, message) {
   const labelId = 'a11y-label-' + Math.random().toString(36).substr(2, 9);
   errorLabel.id = labelId;
   errorLabel.className = 'a11y-error-highlight';
+  errorLabel.setAttribute('role', 'status');
+  errorLabel.setAttribute('aria-live', 'polite');
 
   // Create message span
   const messageSpan = document.createElement('span');
@@ -2540,6 +2298,12 @@ function highlightError(element, message) {
 
   window.addEventListener('scroll', repositionLabel);
   window.addEventListener('resize', repositionLabel);
+
+  // Track for cleanup
+  _a11yCleanupFunctions.push(() => {
+    window.removeEventListener('scroll', repositionLabel);
+    window.removeEventListener('resize', repositionLabel);
+  });
 }
 
 // Adjust overlapping labels by stacking them vertically
@@ -2586,23 +2350,44 @@ function adjustOverlappingLabels(newLabel) {
 }
 
 // Utility functions for contrast calculation
-function getBackgroundColor(element) {
-  let bgColor = window.getComputedStyle(element).backgroundColor;
+function compositeColors(fgRGB, bgRGB) {
+  const a = fgRGB.a;
+  return {
+    r: Math.round(a * fgRGB.r + (1 - a) * bgRGB.r),
+    g: Math.round(a * fgRGB.g + (1 - a) * bgRGB.g),
+    b: Math.round(a * fgRGB.b + (1 - a) * bgRGB.b),
+    a: 1,
+  };
+}
 
-  // If transparent, walk up the tree
-  if (bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
-    let parent = element.parentElement;
-    while (parent) {
-      bgColor = window.getComputedStyle(parent).backgroundColor;
-      if (bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
-        return bgColor;
+function getBackgroundColor(element) {
+  // Walk up the tree compositing semi-transparent backgrounds
+  const layers = [];
+  let current = element;
+
+  while (current) {
+    const bgColor = window.getComputedStyle(current).backgroundColor;
+    if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+      const rgb = parseRGB(bgColor);
+      if (rgb) {
+        layers.push(rgb);
+        // If this layer is fully opaque, no need to go further up
+        if (rgb.a >= 1) break;
       }
-      parent = parent.parentElement;
     }
-    return 'rgb(255, 255, 255)'; // Default to white
+    current = current.parentElement;
   }
 
-  return bgColor;
+  if (layers.length === 0) return 'rgb(255, 255, 255)'; // Default white
+
+  // Composite from bottom (furthest ancestor) to top (closest to element)
+  // Start with white as the base if the bottom layer is semi-transparent
+  let result = { r: 255, g: 255, b: 255, a: 1 };
+  for (let i = layers.length - 1; i >= 0; i--) {
+    result = compositeColors(layers[i], result);
+  }
+
+  return `rgb(${result.r}, ${result.g}, ${result.b})`;
 }
 
 function getContrastRatio(color1, color2) {
@@ -2625,12 +2410,13 @@ function getContrastRatio(color1, color2) {
 }
 
 function parseRGB(colorString) {
-  const match = colorString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  const match = colorString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\s*\)/);
   if (match) {
     return {
       r: parseInt(match[1]),
       g: parseInt(match[2]),
       b: parseInt(match[3]),
+      a: match[4] !== undefined ? parseFloat(match[4]) : 1,
     };
   }
   return null;
@@ -2653,12 +2439,22 @@ function getRelativeLuminance(rgb) {
 
 // ===== AUTO-CLEANUP ON PAGE NAVIGATION =====
 // Clear highlights when navigating to a new page
-let lastUrl = location.href;
-new MutationObserver(() => {
-  const currentUrl = location.href;
-  if (currentUrl !== lastUrl) {
-    lastUrl = currentUrl;
-    console.log('Page navigation detected, clearing highlights');
-    clearHighlights();
-  }
-}).observe(document, { subtree: true, childList: true });
+function _a11yOnNavigate() {
+  console.log('Page navigation detected, clearing highlights');
+  clearHighlights();
+}
+
+window.addEventListener('popstate', _a11yOnNavigate);
+window.addEventListener('hashchange', _a11yOnNavigate);
+
+// Intercept pushState/replaceState for SPA navigation
+const _a11yOriginalPushState = history.pushState;
+const _a11yOriginalReplaceState = history.replaceState;
+history.pushState = function (...args) {
+  _a11yOriginalPushState.apply(this, args);
+  _a11yOnNavigate();
+};
+history.replaceState = function (...args) {
+  _a11yOriginalReplaceState.apply(this, args);
+  _a11yOnNavigate();
+};

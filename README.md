@@ -28,7 +28,7 @@ A cross-browser extension (Chrome & Firefox) to audit accessibility issues withi
 
 4. **Confirm installation**
    - You'll see the extension icon in the toolbar
-   - Click the icon to open the popup
+   - Click the icon to open the **side panel** (stays open while you interact with the page)
 
 ### Firefox
 
@@ -44,17 +44,23 @@ A cross-browser extension (Chrome & Firefox) to audit accessibility issues withi
    - Navigate to `about:debugging#/runtime/this-firefox`
    - Click "Load Temporary Add-on"
    - Select the `manifest.json` file
+   - Click the extension icon to open the **sidebar**
 
-3. **Or install permanently** (requires signing)
+3. **For persistent development** (auto-reload on file changes)
 
    ```bash
-   npm install
-   npm run firefox:build
+   npm install -g web-ext
+   cd accessibility-checker
+   web-ext run
    ```
 
-   Then submit the generated `.xpi` file to Firefox Add-ons.
+4. **Install permanently** (requires signing)
+
 
 📖 **For detailed Firefox instructions**, see [QUICK_START_FIREFOX.md](QUICK_START_FIREFOX.md)
+   - Package as ZIP and submit to [addons.mozilla.org](https://addons.mozilla.org)
+   - Or use `web-ext sign --api-key=... --api-secret=...`
+
 
 ---
 
@@ -62,7 +68,10 @@ A cross-browser extension (Chrome & Firefox) to audit accessibility issues withi
 
 ### Basic Analysis (Single Page)
 
-1. **Open the popup** by clicking the extension icon
+1. **Open the side panel** by clicking the extension icon (stays open while you browse)
+
+   - **Chrome/Edge**: Opens as a side panel on the right
+   - **Firefox**: Opens as a sidebar
 
 2. **Configure target container**
 
@@ -116,16 +125,16 @@ Ideal for auditing complete user journeys (e.g., checkout process, registration,
 
 #### Step 1: Start a Flow
 
-1. Click **"🎬 Start Flow"**
+1. Click **"Start Flow"**
 2. Enter a descriptive name (e.g., "Checkout Flow", "Registration Process")
-3. The UI will change showing:
-   - **"➕ Analyze Page"** button (to add pages manually)
-   - **"✅ Finish Flow"** button
-   - Active flow status
+3. The UI will show:
+   - Flow name and page count with a green border indicator
+   - **"Analyze Page"** button (to analyze the current page)
+   - **"Finish Flow"** button
 
 #### Step 2: Automatic Navigation
 
-- **Close the popup** and navigate normally through your application
+- **Close the panel** and navigate normally through your application
 - The extension will **automatically analyze each page** when you change URLs
 - You'll receive **system notifications** confirming each analysis
 - **No need to keep the popup open**
@@ -140,14 +149,14 @@ Ideal for auditing complete user journeys (e.g., checkout process, registration,
 
 If you want to manually analyze the current page:
 
-1. Open the popup
-2. Click **"➕ Analyze Page"**
+1. Open the side panel
+2. Click **"Analyze Page"**
 3. The current page will be analyzed and added to the flow
 
 #### Step 4: Finish the Flow
 
-1. When you finish the journey, open the popup
-2. Click **"✅ Finish Flow"**
+1. When you finish the journey, open the side panel
+2. Click **"Finish Flow"**
 3. The flow is saved and UI returns to normal mode
 
 ---
@@ -344,18 +353,19 @@ The extension finds the **outermost clickable parent element** to avoid false po
 
 ```
 accessibility-checker/
-├── manifest.json              # Extension configuration
-├── popup.html                 # Popup interface
+├── manifest.json              # Extension configuration (Chrome + Firefox)
+├── popup.html                 # Side panel / sidebar interface
 ├── README.md                  # This documentation
 │
 ├── src/
-│   ├── background.js          # Service worker (automatic analysis)
+│   ├── background.js          # Service worker (auto-analysis + panel control)
+│   ├── browser-polyfill.js    # Chrome/Firefox API compatibility layer
 │   ├── content.js             # Audit logic (16 checks)
-│   ├── popup.js               # Popup logic and flows
+│   ├── popup.js               # Panel logic and flows
 │   └── report.js              # Report system and storage
 │
 ├── styles/
-│   ├── popup.css              # Popup styles (responsive)
+│   ├── popup.css              # Panel styles (responsive)
 │   └── content.css            # Page highlight styles
 │
 └── icons/
@@ -427,9 +437,11 @@ The extension uses `chrome.storage.local` to store:
 
 ### Compatibility
 
-- **Chrome**: Version 88+ (Manifest V3)
-- **Edge**: Version 88+ (Chromium-based)
-- **Other browsers**: Not supported (uses Chrome-specific APIs)
+- **Chrome**: Version 116+ (Manifest V3, Side Panel API)
+- **Edge**: Version 116+ (Chromium-based)
+- **Firefox**: Version 109+ (Manifest V3, Sidebar Action)
+- **Brave**: Version 116+ (Chromium-based)
+- **Other browsers**: Not supported
 
 ### Privacy
 
