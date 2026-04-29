@@ -1,6 +1,6 @@
-## 📦 Para Publicar en Firefox Add-ons
+# how to publish | Firefox Add-ons?
 
-TODO: check with Jairo to publish ONLY him
+TODO: check with Jairo to publish ONLY him -- he does NOT want to publish it
 
 
 ```powershell

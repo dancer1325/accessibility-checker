@@ -80,96 +80,93 @@
 
 ### Basic Analysis (Single Page)
 
-TODO: 
-1. **Open the popup** by clicking the extension icon
-
+1. click the extension icon
 2. **Configure target container**
-
-   - In "Target Div Class", enter the class of the container you want to audit
-   - Example: `main-content`, `app-container`, `content-wrapper`
-   - You can also use HTML tags: `main`, `article`, `section`
-
+    - | "Target Div Class",
+        - set the
+            - container's class / you want to audit
+                - Example: `main-content`, `app-container`, `content-wrapper`, OR
+            - HTML tags
+                - Example: `main`, `article`, `section`
 3. **Select checks**
 
-   - **Basic Checks** (enabled by default):
+    - **Basic Checks**:
 
-     - ✅ **Text Size** - Minimum font size 14px
-     - ✅ **Clickable Icons** - Minimum clickable elements 24x24px
-     - ✅ **Color Contrast** - Text-background contrast (WCAG AA)
-     - ✅ **Border Contrast** - Border contrast 3:1
-     - ✅ **ARIA Labels** - Accessibility labels
-     - ⬜ **Empty Elements** - Empty clickable elements (0x0px)
+      | Check               | Description                           | Default |
+      |---------------------|---------------------------------------|---------|
+      | **Text Size**       | \>= 14px                              | ✅       |
+      | **Clickable Icons** | \>= 24x24px                           | ✅       |
+      | **Color Contrast**  | == Text-background contrast (WCAG AA) | ✅       |
+      | **Border Contrast** | 3:1                                   | ✅       |
+      | **ARIA Labels**     | == Accessibility labels               | ✅       |
+      | **Empty Elements**  | == Empty clickable elements (0x0px)   | ⬜       |
 
-   - **Advanced Checks** (disabled by default - click to expand):
-     - 🔴 **High Priority**:
-       - ⬜ **Focus Visible** - Focus indicators for keyboard navigation
-       - ⬜ **Tab Order** - Tabindex issues
-       - ⬜ **Alt Text** - Alternative text for images/icons
-     - 🟡 **Medium Priority**:
-       - ⬜ **Form Labels** - Form labels
-       - ⬜ **Headings Structure** - h1-h6 hierarchy
-       - ⬜ **Keyboard Traps** - Keyboard traps
-       - ⬜ **Hidden Content** - aria-hidden conflicts
-     - 🟢 **Low Priority**:
-       - ⬜ **Color Dependence** - Color-only information
-       - ⬜ **Language Attributes** - lang attributes
-       - ⬜ **Link Text** - Descriptive links
+    - **Advanced Checks**
+        - ⚠️by default, disabled⚠️
+
+          | Check                   | Description                               | Priority |
+                 |-------------------------|-------------------------------------------|----------|
+          | **Focus Visible**       | \| keyboard navigation, focus indicators  | 🔴       |
+          | **Tab Order**           | Tabindex issues                           | 🔴       |
+          | **Alt Text**            | == ALTERNATIVE text -- to -- images/icons | 🔴       |
+          | **Form Labels**         | Form labels                               | 🟡       |
+          | **Headings Structure**  | h1-h6 hierarchy                           | 🟡       |
+          | **Keyboard Traps**      | Keyboard traps                            | 🟡       |
+          | **Hidden Content**      | aria-hidden conflicts                     | 🟡       |
+          | **Color Dependence**    | Color-only information                    | 🟢       |
+          | **Language Attributes** | lang attributes                           | 🟢       |
+          | **Link Text**           | Descriptive links                         | 🟢       |
 
 4. **Run the analysis**
 
-   - Click "Run Analysis"
-   - Wait for completion (you'll see success/error message)
-   - Errors will be highlighted with red dashed borders and floating labels
+    - Click "Run Analysis"
+    - Wait for completion (you'll see success/error message)
+    - Errors will be highlighted with red dashed borders and floating labels
 
 5. **Interact with errors**
-   - **Floating labels**: Show error message
-   - **X button**: Close individual label
-   - **Hover**: Labels are semi-transparent (92% opacity)
-   - **Auto-positioning**: Labels stack to avoid overlapping
-
----
+    - **Floating labels**: Show error message
+    - **X button**: Close individual label
+    - **Hover**: Labels are semi-transparent (92% opacity)
+    - **Auto-positioning**: Labels stack to avoid overlapping
 
 ### Multi-Page Flow Analysis
 
-Ideal for auditing complete user journeys (e.g., checkout process, registration, onboarding).
+* use cases
+    * complete user journeys
+        * _Examples:_ checkout process, registration, onboarding
 
 #### Step 1: Start a Flow
 
-1. Click **"Start Flow"**
-2. Enter a descriptive name (e.g., "Checkout Flow", "Registration Process")
-3. The UI will show:
-   - Flow name and page count with a green border indicator
-   - **"Analyze Page"** button (to analyze the current page)
-   - **"Finish Flow"** button
+1. Click **"🎬 Start Flow"**
+2. Enter a descriptive name
+   * _Example:_ "Checkout Flow", "Registration Process"
+   * -> UI will change showing:
+    - **"➕ Analyze Page"** button
+      - add pages MANUALLY
+    - **"✅ Finish Flow"** button
+    - Active flow status
 
-#### Step 2: Automatic Navigation
+#### Step 2: Analysis ways
+##### AUTOMATIC
 
-- **Close the panel** and navigate normally through your application
-- The extension will **automatically analyze each page** when you change URLs
-- You'll receive **system notifications** confirming each analysis
-- **No need to keep the popup open**
+- ⚠️Close the panel⚠️ & navigate NORMALLY -- through -- your application
+  - Reason:🧠the extension AUTOMATICALLY analyze EACH page | change URLs🧠
+    - background service worker 
+      - detects URL changes
+      - AUTOMATICALLY analyzes the new page / saved configuration 
+  - You receive **system notifications** confirming / EACH analysis
 
-**How it works**:
+##### MANUAL
 
-- A background service worker detects URL changes
-- Automatically analyzes the new page with saved configuration
-- Errors are stored organized by flow → page → error type
+1. | side panel
+   * click **"Analyze Page"**
+     * -> CURRENT page is analyzed & added | flow
 
-#### Step 3: Manual Analysis (Optional)
+#### Step 3: Finish the Flow
 
-If you want to manually analyze the current page:
-
-1. Open the side panel
-2. Click **"Analyze Page"**
-3. The current page will be analyzed and added to the flow
-
-#### Step 4: Finish the Flow
-
-1. When you finish the journey, open the side panel
-2. Click **"Finish Flow"**
-3. The flow is saved and UI returns to normal mode
-
----
+1. open the side panel
+   * Click **"Finish Flow"**
+   * flow is saved & UI returns to normal mode
 
 ### NOT valid | ALL pages
 
@@ -391,48 +388,6 @@ accessibility-checker/
     ├── icon48.png
     └── icon128.png
 ```
-
----
-
-## 🤝 Contributing
-
-### Report Bugs
-
-If you find an issue:
-
-1. Open DevTools Console (F12)
-2. Reproduce the error
-3. Copy error messages
-4. Open an issue with:
-   - Problem description
-   - Steps to reproduce
-   - Console logs
-   - Example URL (if possible)
-
-### Suggest Improvements
-
-Have ideas for new checks or improvements?
-
-1. Open an issue describing your proposal
-2. Include use cases
-3. Reference WCAG criteria if applicable
-
-### Local Development
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/your-username/accessibility-checker.git
-cd accessibility-checker
-
-# 2. Make your changes in src/, styles/, etc.
-
-# 3. Reload extension at chrome://extensions/
-#    Click the "Reload" button for the extension
-
-# 4. Test your changes
-```
-
----
 
 ## 📝 Technical Notes
 
