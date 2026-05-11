@@ -5,6 +5,7 @@
   "version": "1.8.5",
   "description": "Comprehensive accessibility audit with 16 checks including advanced WCAG 2.1 criteria screenshots by Jairo Costa (@soyJairoCosta)",
   "permissions": ["activeTab", "scripting", "storage", "notifications", "tabs", "sidePanel"],
+  "host_permissions": ["https://*/*", "http://*/*"],
   "background": {
     "scripts": ["src/browser-polyfill.js", "src/background.js"]
   },
